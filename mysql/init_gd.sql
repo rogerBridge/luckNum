@@ -1,8 +1,8 @@
 USE db_play;
 
-DROP TABLE IF EXISTS db_play.jx11x5;
+DROP TABLE IF EXISTS db_play.gd11x5;
 
-CREATE TABLE IF NOT EXISTS jx11x5 (
+CREATE TABLE IF NOT EXISTS gd11x5 (
                                            id INT AUTO_INCREMENT PRIMARY KEY NOT NULL , /* 必须和主键一起使用*/
                                            order_number VARCHAR(128) , /* */
                                            order_time VARCHAR(128) ,
