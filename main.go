@@ -22,6 +22,8 @@ import (
 	"time"
 )
 
+var hopeWin = 1.02
+
 func main() {
 	//dayList := []int{1, 2, 3, 5, 7, 14, 21, 30, 60, 90, 120, 180, 360}
 	//for i := 0; i < len(dayList); i++
@@ -35,24 +37,29 @@ func main() {
 	//saveData2Mysql("gd/")
 	//saveData2MysqlByDate("jx/", "2020-07-12")
 
-	prefix := "jx/"
 	//// 更新最新数据
 	//err := getNewestData(prefix)
 	//if err!=nil {
 	//	log.Println(err)
 	//}
 	//timingGetData()
-	
 
-	//特定日期概率
-	err := getSingleDayProbability(time.Now().Format("20060102"), prefix)
-	if err!=nil {
-		panic(err)
-	}
-
-	// 开始程序, 更新luck表中的数据到最新
-	showThink(prefix, 0)
+	var prefix = "gd/"
+	////特定日期概率
+	//err := getSingleDayProbability(time.Now().Format("20060102"), prefix)
+	//if err!=nil {
+	//	panic(err)
+	//}
+	//
+	//// 开始程序, 更新luck表中的数据到最新
+	//showThink(prefix, 0)
 	//httpServer()
+
+	err := getLuckNum(prefix)
+	if err!=nil {
+		log.Printf("%+v\n", err)
+		return
+	}
 }
 
 // 定时获取最新数据
@@ -607,7 +614,6 @@ func showDiffInRange(timeRange []string, queryData []mysql.QueryData, specificNu
 // 展示思考后的结果, flag为: "jx/" || "gd/"
 // limit 最近多少期
 func showThink(flag string, limit int) {
-	hopeWin := 1.02
 	if flag == "gd/" {
 		fmt.Println("开始评估gd近", limit, "期...")
 		data, err := mysql.QueryDataFromMysqlGd()
@@ -651,7 +657,7 @@ func showThink(flag string, limit int) {
 						}
 					}
 					if 2.156*float64(len(r[keyList[i]]))/float64(count) > hopeWin {
-						fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
+						//fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
 						// 将数学期望大于hopeWin的数值写入数据库
 						err := mysql.Write2Luck(flag, q, keyList[i], float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
 						if err!=nil {
@@ -707,7 +713,7 @@ func showThink(flag string, limit int) {
 						}
 					}
 					if 2.156*float64(len(r[keyList[i]]))/float64(count) > hopeWin {
-						fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
+						//fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
 						// 将数学期望大于hopeWin的数值写入数据库
 						err := mysql.Write2Luck(flag, q, keyList[i], float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
 						if err!=nil {

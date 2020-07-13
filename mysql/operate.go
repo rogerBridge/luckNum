@@ -209,3 +209,48 @@ func DeleteLuckTable(prefix string) error {
 	}
 	return errors.New("unsupported table types")
 }
+
+type LuckNum struct {
+	SpecificNum int
+	LeaveValue int
+	StopProbability float64
+	HopeIncome float64
+}
+
+func GetDataFromLuckTable(prefix string) ([]LuckNum, error) {
+	if prefix == "jx/" {
+		luckNumList := make([]LuckNum, 0)
+		rows, err := conn.Query("SELECT specific_num, leave_value, stop_probability, hope_income FROM jx_luck")
+		if err != nil {
+			return []LuckNum{}, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			q := LuckNum{}
+			err := rows.Scan(&q.SpecificNum, &q.LeaveValue, &q.StopProbability, &q.HopeIncome)
+			if err != nil {
+				return []LuckNum{}, err
+			}
+			luckNumList = append(luckNumList, q)
+		}
+		return luckNumList, nil
+	}
+	if prefix == "gd/" {
+		luckNumList := make([]LuckNum, 0)
+		rows, err := conn.Query("SELECT specific_num, leave_value, stop_probability, hope_income FROM gd_luck")
+		if err != nil {
+			return []LuckNum{}, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			q := LuckNum{}
+			err := rows.Scan(&q.SpecificNum, &q.LeaveValue, &q.StopProbability, &q.HopeIncome)
+			if err != nil {
+				return []LuckNum{}, err
+			}
+			luckNumList = append(luckNumList, q)
+		}
+		return luckNumList, nil
+	}
+	return []LuckNum{}, errors.New("unsupport prefix")
+}
