@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/beevik/etree"
 	"go11x5/mysql"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -88,7 +89,7 @@ func getLuckNum(prefix string) error {
 		}
 	}
 	// 得到数据库中遗漏值和期望之间的关系
-	showThink(prefix, 0) // 首先, 更新luck表
+	showThink(prefix, 0, hopeWin) // 首先, 更新luck表
 	// 拿到luck表中specific_num, leave_value, stop_probability, hope_income 数值
 	luckNumList, err := mysql.GetDataFromLuckTable(prefix)
 	if err!=nil {
@@ -98,12 +99,45 @@ func getLuckNum(prefix string) error {
 	//fmt.Println(luckNumList)
 	// 看看最新一期里面有没有什么机会?
 	fmt.Println(prefix, "这一期: ", iwant.SelectElement("td").Text())
+	nearestOrderNum := iwant.SelectElement("td").Text()
 	for k, v := range m{
 		for _, luckNum := range luckNumList {
 			if k==luckNum.SpecificNum && v==luckNum.LeaveValue {
 				fmt.Printf("可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n",luckNum.SpecificNum, luckNum.LeaveValue, luckNum.StopProbability, luckNum.HopeIncome)
+				PushMsg(fmt.Sprintf("%s:%s 可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", prefix, nearestOrderNum, luckNum.SpecificNum, luckNum.LeaveValue, luckNum.StopProbability, luckNum.HopeIncome))
 			}
 		}
 	}
 	return nil
+}
+
+func PushMsg(content string) {
+	url := "http://sthink.top:8080/pushMsg"
+	reqBody, err := json.Marshal(map[string]string {
+		"content": content,
+	})
+	if err!=nil {
+		log.Printf("make reqBody error \n")
+		return
+	}
+	c := http.Client{Timeout: 60*time.Second}
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(reqBody))
+	if err!=nil {
+		log.Fatalln(err)
+	}
+	req.Header.Set("Authorization", "eb356e0f-2ad8-4352-9c1c-1af1db033f81")
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.Do(req)
+	if err!=nil {
+		log.Printf("%+v\n", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	Bytebody, err := ioutil.ReadAll(resp.Body)
+	if err!=nil {
+		log.Printf("%+v\n", err)
+		return
+	}
+	log.Println(string(Bytebody))
 }
