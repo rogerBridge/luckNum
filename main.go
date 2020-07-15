@@ -22,7 +22,7 @@ import (
 	"time"
 )
 
-var hopeWin = 1.03273
+var hopeWin = 1.02
 
 func main() {
 	//dayList := []int{1, 2, 3, 5, 7, 14, 21, 30, 60, 90, 120, 180, 360}
@@ -44,23 +44,23 @@ func main() {
 	//}
 	//timingGetData()
 
-	//美妙的数学期望
-	for ;; {
-		t0 := time.Now()
-		if t0.Hour() > 8 && t0.Hour() < 24 {
-			err := getLuckNum("gd/")
-			if err!=nil {
-				log.Printf("%+v\n", err)
-				return
-			}
-			err = getLuckNum("jx/")
-			if err!=nil {
-				log.Printf("%+v\n", err)
-				return
-			}
-		}
-		time.Sleep(10*time.Minute)
-	}
+	////筛选符合要求的数学期望
+	//for ;; {
+	//	t0 := time.Now()
+	//	if t0.Hour() > 8 && t0.Hour() < 24 {
+	//		err := getLuckNum("gd/")
+	//		if err!=nil {
+	//			log.Printf("%+v\n", err)
+	//			return
+	//		}
+	//		err = getLuckNum("jx/")
+	//		if err!=nil {
+	//			log.Printf("%+v\n", err)
+	//			return
+	//		}
+	//	}
+	//	time.Sleep(10*time.Minute)
+	//}
 
 	////特定日期概率
 	//err := getSingleDayProbability(time.Now().Format("20060102"), prefix)
@@ -72,6 +72,19 @@ func main() {
 	//fmt.Println("开始评估gd近", limit, "期...")
 	//showThink("gd/", 0, hopeWin)
 	//httpServer()
+
+	// 每个数字历史记录中的最大遗漏值
+	//统计遗漏值和时间期数的关系
+	data, err := mysql.QueryDataFromMysqlGd()
+	if err!=nil {
+		log.Fatalln(err)
+	}
+	for i := 1; i < 12; i++ {
+		r := calSpecificNumTimes(data, i)
+		//fmt.Println("specificNum: ",i, r)
+		calLeaveAndTimes(r, i)
+	}
+
 
 }
 
@@ -642,6 +655,7 @@ func showThink(flag string, limit int, hopeWin float64) {
 		for i := 1; i < 12; i++ {
 			countTimesArise(data, i, ariseTimesMap)
 		}
+		//log.Println(ariseTimesMap)
 
 		// 统计遗漏值和时间期数的关系
 		//for i := 1; i < 12; i++ {
@@ -675,7 +689,7 @@ func showThink(flag string, limit int, hopeWin float64) {
 					if 2.156 * ( (float64(len(r[keyList[i]]))/float64(count)) / (1+ariseTimesMap[q]) ) > hopeWin {
 						//fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
 						// 将数学期望大于hopeWin的数值写入数据库
-						err := mysql.Write2Luck(flag, q, keyList[i], float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
+						err := mysql.Write2Luck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count)) / (1+ariseTimesMap[q]), 2.156 * ( (float64(len(r[keyList[i]]))/float64(count)) / (1+ariseTimesMap[q]) ))
 						if err!=nil {
 							log.Printf("write to mysql_luck error\n")
 							return
@@ -701,6 +715,8 @@ func showThink(flag string, limit int, hopeWin float64) {
 		for i := 1; i < 12; i++ {
 			countTimesArise(data, i, ariseTimesMap)
 		}
+		//log.Println(ariseTimesMap)
+
 
 		// 统计遗漏值和时间期数的关系
 		//for i := 1; i < 12; i++ {
@@ -734,7 +750,7 @@ func showThink(flag string, limit int, hopeWin float64) {
 					if 2.156 * ( (float64(len(r[keyList[i]]))/float64(count)) / (1+ariseTimesMap[q]) ) > hopeWin {
 						//fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
 						// 将数学期望大于hopeWin的数值写入数据库
-						err := mysql.Write2Luck(flag, q, keyList[i], float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
+						err := mysql.Write2Luck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count)) / (1+ariseTimesMap[q]), 2.156 * ( (float64(len(r[keyList[i]]))/float64(count)) / (1+ariseTimesMap[q]) ))
 						if err!=nil {
 							log.Printf("write to mysql_luck error\n")
 							return
@@ -1031,7 +1047,7 @@ func calLeaveAndTimes(m map[int][]string, specificNum int) {
 	fmt.Println("数字", specificNum, "遗漏的最大数字是: ", keyList[len(keyList)-1], "遗漏的期数是: ", m[keyList[len(keyList)-1]], "对应的时间是: ", result)
 }
 
-// 计算某个数字在queryList中出现的最大次数以及对应的orderNum
+// 计算某个数字在queryList中遗漏的最大次数以及对应的orderNum
 func calSpecificNumTimes(queryList []mysql.QueryData, specificNum int) map[int][]string {
 	count := 0
 	countMap := make(map[int][]string, 0)
