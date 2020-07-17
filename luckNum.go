@@ -93,7 +93,7 @@ func getLuckNum(prefix string) error {
 	showThink(prefix, 0, hopeWin) // 首先, 更新luck表
 	// 拿到luck表中specific_num, leave_value, stop_probability, hope_income 数值
 	luckNumList, err := mysql.GetDataFromLuckTable(prefix)
-	if err!=nil {
+	if err != nil {
 		log.Println(err)
 		return err
 	}
@@ -101,20 +101,31 @@ func getLuckNum(prefix string) error {
 	// 看看最新一期里面有没有什么机会?
 	fmt.Println(prefix, "这一期: ", iwant.SelectElement("td").Text())
 	nearestOrderNum := iwant.SelectElement("td").Text()
-	for k, v := range m{
+	for k, v := range m {
+		var willOrderLuckNum []mysql.LuckNum
 		for _, luckNum := range luckNumList {
-			if k==luckNum.SpecificNum && v==luckNum.LeaveValue {
-				fmt.Printf("可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n",luckNum.SpecificNum, luckNum.LeaveValue, luckNum.StopProbability, luckNum.HopeIncome)
-				forecastOrderNum, err := nextOne(nearestOrderNum)
-				if err!=nil {
-					log.Println(err)
+			if k == luckNum.SpecificNum && v == luckNum.LeaveValue {
+				fmt.Printf("可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", luckNum.SpecificNum, luckNum.LeaveValue, luckNum.StopProbability, luckNum.HopeIncome)
+				willOrderLuckNum = append(willOrderLuckNum, luckNum)
+			}
+		}
+		if len(willOrderLuckNum) > 0 {
+			// 从willOrderLuckNum中找到数学期望最大的那个luckNum, 并将它写入到forecast_{jx/gd}表格中
+			vWant := willOrderLuckNum[0]
+			for _, v := range willOrderLuckNum {
+				if v.HopeIncome > vWant.HopeIncome {
+					vWant = v
 				}
-				PushMsg(fmt.Sprintf("%s:forecast:%s 可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", prefix, forecastOrderNum, luckNum.SpecificNum, luckNum.LeaveValue, luckNum.StopProbability, luckNum.HopeIncome))
-				// 将预测的数据存入forecast_{jx|gd} 表格
-				err = mysql.StoreResultToForecastTable(prefix, forecastOrderNum, luckNum.SpecificNum)
-				if err!=nil {
-					log.Println(err)
-				}
+			}
+			// 将预测的数学期望最高的luckNum写入forecast_{jx/gd}中
+			forecastOrderNum, err := nextOne(nearestOrderNum)
+			if err != nil {
+				log.Println(err)
+			}
+			PushMsg(fmt.Sprintf("%s:forecast:%s 可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", prefix, forecastOrderNum, vWant.SpecificNum, vWant.LeaveValue, vWant.StopProbability, vWant.HopeIncome))
+			err = mysql.StoreResultToForecastTable(prefix, forecastOrderNum, vWant.SpecificNum)
+			if err != nil {
+				log.Println(err)
 			}
 		}
 	}
@@ -122,7 +133,7 @@ func getLuckNum(prefix string) error {
 }
 
 // 生成下一期orderNum
-func nextOne(thisOne string) (string,error) {
+func nextOne(thisOne string) (string, error) {
 	if len(thisOne) != 10 {
 		return "", errors.New("error length")
 	}
@@ -131,43 +142,43 @@ func nextOne(thisOne string) (string,error) {
 	numberInt, _ := strconv.Atoi(number)
 
 	if numberInt < 42 {
-		return dateStr+fmt.Sprintf("%02d", numberInt+1), nil
-	}else if numberInt == 42{
+		return dateStr + fmt.Sprintf("%02d", numberInt+1), nil
+	} else if numberInt == 42 {
 		timeThisOne, err := time.Parse("20060102", dateStr)
-		if err!=nil {
+		if err != nil {
 			return "", err
 		}
-		return timeThisOne.AddDate(0,0,1).Format("20060102")+"01", nil
-	}else {
+		return timeThisOne.AddDate(0, 0, 1).Format("20060102") + "01", nil
+	} else {
 		return "", errors.New("unknown error")
 	}
 }
 
 func PushMsg(content string) {
 	url := "http://sthink.top:8080/pushMsg"
-	reqBody, err := json.Marshal(map[string]string {
+	reqBody, err := json.Marshal(map[string]string{
 		"content": content,
 	})
-	if err!=nil {
+	if err != nil {
 		log.Printf("make reqBody error \n")
 		return
 	}
-	c := http.Client{Timeout: 60*time.Second}
+	c := http.Client{Timeout: 60 * time.Second}
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(reqBody))
-	if err!=nil {
+	if err != nil {
 		log.Fatalln(err)
 	}
 	req.Header.Set("Authorization", "eb356e0f-2ad8-4352-9c1c-1af1db033f81")
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.Do(req)
-	if err!=nil {
+	if err != nil {
 		log.Printf("%+v\n", err)
 		return
 	}
 	defer resp.Body.Close()
 
 	Bytebody, err := ioutil.ReadAll(resp.Body)
-	if err!=nil {
+	if err != nil {
 		log.Printf("%+v\n", err)
 		return
 	}

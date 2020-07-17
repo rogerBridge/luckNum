@@ -44,23 +44,23 @@ func main() {
 	//}
 	//timingGetData()
 
-	////筛选符合要求的数学期望
-	//for ;; {
-	//	t0 := time.Now()
-	//	if t0.Hour() > 8 && t0.Hour() < 24 {
-	//		err := getLuckNum("gd/")
-	//		if err!=nil {
-	//			log.Printf("%+v\n", err)
-	//			return
-	//		}
-	//		err = getLuckNum("jx/")
-	//		if err!=nil {
-	//			log.Printf("%+v\n", err)
-	//			return
-	//		}
-	//	}
-	//	time.Sleep(10*time.Minute)
-	//}
+	//筛选符合要求的数学期望
+	for ;; {
+		t0 := time.Now()
+		if t0.Hour() > 8 && t0.Hour() < 24 {
+			err := getLuckNum("gd/")
+			if err!=nil {
+				log.Printf("%+v\n", err)
+				return
+			}
+			err = getLuckNum("jx/")
+			if err!=nil {
+				log.Printf("%+v\n", err)
+				return
+			}
+		}
+		time.Sleep(10*time.Minute)
+	}
 
 	////特定日期概率
 	//err := getSingleDayProbability(time.Now().Format("20060102"), prefix)
@@ -86,55 +86,51 @@ func main() {
 	//}
 
 	// 每天23:30验证当天的预测
-	for ;; {
-		t0 := time.Now()
-		if t0.Hour() == 23 && t0.Minute() == 30 {
-			err := mysql.DetectForecast("jx/")
-			if err!=nil {
-				log.Println(err)
-			}
-			err = mysql.DetectForecast("gd/")
-			if err!=nil {
-				log.Println(err)
-			}
-		}
-		time.Sleep(20*time.Second)
-	}
+	// 立即开始预测
+	//err := mysql.DetectForecast("jx/")
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//err = mysql.DetectForecast("gd/")
+	//if err != nil {
+	//	log.Println(err)
+	//}
+
 }
 
 // 定时获取最新数据
-func timingGetData()  {
-	for ;;{
+func timingGetData() {
+	for {
 		now := time.Now()
 		if now.Hour() > 8 && now.Hour() <= 23 {
 			prefix1 := "gd/"
 			// 更新最新数据
 			err := getNewestData(prefix1)
-			if err!=nil {
+			if err != nil {
 				log.Println(err)
 			}
 
 			prefix2 := "jx/"
 			err = getNewestData(prefix2)
-			if err!=nil {
+			if err != nil {
 				log.Println(err)
 			}
 		}
-		time.Sleep(60*time.Second)
+		time.Sleep(60 * time.Second)
 	}
 }
 
 // 获取当天单个数字的乐观概率和悲观概率
-func getSingleDayProbability(dateStr string, prefix string) error{
+func getSingleDayProbability(dateStr string, prefix string) error {
 	if prefix == "gd/" {
 		allData, err := mysql.QueryDataFromMysqlGd()
-		if err!=nil {
+		if err != nil {
 			log.Println(err)
 			return err
 		}
 		lenAllData := len(allData)
 		dayData, err := mysql.QueryDataFromMysqlGdSomeDay(dateStr)
-		if err!=nil {
+		if err != nil {
 			log.Println(err)
 			return err
 		}
@@ -159,32 +155,32 @@ func getSingleDayProbability(dateStr string, prefix string) error{
 		// 获取这个数字最近35天的某一天的最小出现次数
 		timeList := constructDate2()
 		day := 35
-		for i:=1; i<12; i++ {
+		for i := 1; i < 12; i++ {
 			m := showDiffInRange(timeList[len(timeList)-day:], allData, i)
 			minNumList := make([]float64, 0)
-			for _, v := range m{
+			for _, v := range m {
 				minNumList = append(minNumList, v[3])
 			}
 			sort.Float64s(minNumList)
 			minNum := minNumList[0] // 找出minNumList中的最小值
 			//log.Println(minNumList)
 			// 乐观和悲观的估计计算数值
-			theoryProbability := 42.0*5.0/11.0
-			happyValue := (theoryProbability-float64(numComeList[i])) / (42.0 - float64(todayHadCome))
-			unhappyValue := (theoryProbability+minNum-float64(numComeList[i])) / (42.0 - float64(todayHadCome))
+			theoryProbability := 42.0 * 5.0 / 11.0
+			happyValue := (theoryProbability - float64(numComeList[i])) / (42.0 - float64(todayHadCome))
+			unhappyValue := (theoryProbability + minNum - float64(numComeList[i])) / (42.0 - float64(todayHadCome))
 			fmt.Printf("%s 数字%d 的乐观估计值是: %.4f, 悲观估计值是: %.4f\n", prefix, i, happyValue, unhappyValue)
 		}
 		return nil
 	}
 	if prefix == "jx/" {
 		allData, err := mysql.QueryDataFromMysqlJx()
-		if err!=nil {
+		if err != nil {
 			log.Println(err)
 			return err
 		}
 		lenAllData := len(allData)
 		dayData, err := mysql.QueryDataFromMysqlJxSomeDay(dateStr)
-		if err!=nil {
+		if err != nil {
 			log.Println(err)
 			return err
 		}
@@ -210,19 +206,19 @@ func getSingleDayProbability(dateStr string, prefix string) error{
 		// 获取这个数字最近35天的某一天的最小出现次数
 		timeList := constructDate2()
 		day := 35
-		for i:=1; i<12; i++ {
+		for i := 1; i < 12; i++ {
 			m := showDiffInRange(timeList[len(timeList)-day:], allData, i)
 			minNumList := make([]float64, 0)
-			for _, v := range m{
+			for _, v := range m {
 				minNumList = append(minNumList, v[3])
 			}
 			sort.Float64s(minNumList)
 			minNum := minNumList[0] // 找出minNumList中的最小值
 			//log.Println(minNumList)
 			// 乐观和悲观的估计计算数值
-			theoryProbability := 42.0*5.0/11.0
-			happyValue := (theoryProbability-float64(numComeList[i])) / (42.0 - float64(todayHadCome))
-			unhappyValue := (theoryProbability+minNum-float64(numComeList[i])) / (42.0 - float64(todayHadCome))
+			theoryProbability := 42.0 * 5.0 / 11.0
+			happyValue := (theoryProbability - float64(numComeList[i])) / (42.0 - float64(todayHadCome))
+			unhappyValue := (theoryProbability + minNum - float64(numComeList[i])) / (42.0 - float64(todayHadCome))
 			fmt.Printf("%s 数字%d 的乐观估计值是: %.4f, 悲观估计值是: %.4f\n", prefix, i, happyValue, unhappyValue)
 		}
 		return nil
@@ -231,7 +227,7 @@ func getSingleDayProbability(dateStr string, prefix string) error{
 }
 
 // 实时的获取数据然后写入数据库
-func getNewestData(prefix string) error{
+func getNewestData(prefix string) error {
 	var baseURL, sCookie string
 	if prefix == "jx/" {
 		baseURL = "https://chart.ydniu.com/trend/syx5jx/"
@@ -315,21 +311,21 @@ func getNewestData(prefix string) error{
 		}
 		// 遍历查找数据库中是否存在重复数据
 		isExist, err := mysql.IsExistInMysql(prefix, orderNum)
-		if err!=nil {
+		if err != nil {
 			log.Fatalln(err)
 		}
 		if isExist == 0 {
 			// 数据不存在于mysql, 可以写入
 			if prefix == "jx/" {
 				err = mysql.SaveResultToMysqlJx(orderNum, orderTime, orderValue, orderString)
-				if err!=nil {
+				if err != nil {
 					log.Println(err)
 					return err
 				}
 			}
 			if prefix == "gd/" {
 				err = mysql.SaveResultToMysqlGd(orderNum, orderTime, orderValue, orderString)
-				if err!=nil {
+				if err != nil {
 					log.Println(err)
 					return err
 				}
@@ -362,6 +358,7 @@ func httpServer() {
 		return
 	}
 }
+
 //
 // 展示一个时间range内某一个特定数字的理论概率和实际概率之间的差值
 func showDiffInRangeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -680,11 +677,11 @@ func showThink(flag string, limit int, hopeWin float64) {
 		// 统计数字q出现遗漏值大于等于x的遗漏数值和对应期数
 		// 每次向luck表中遍历添加数值时, 先清除luck表中的全部内容
 		err = mysql.DeleteLuckTable(flag)
-		if err!=nil {
+		if err != nil {
 			log.Printf("清除luck %s 失败\n", flag)
 			return
 		}
-		for q:=1; q<12; q++ {
+		for q := 1; q < 12; q++ {
 			r := calSpecificNumTimes(data, q)
 			keyList := make([]int, 0)
 			for k, _ := range r {
@@ -692,19 +689,19 @@ func showThink(flag string, limit int, hopeWin float64) {
 			}
 			sort.Ints(keyList)
 			//fmt.Printf("%s: specific Num %d\n", flag, q)
-			for i:=0; i<len(keyList); i++ {
-				if keyList[i] >=0 {
+			for i := 0; i < len(keyList); i++ {
+				if keyList[i] >= 0 {
 					count := 0
 					for k, v := range r {
-						if k>=keyList[i] {
+						if k >= keyList[i] {
 							count += len(v)
 						}
 					}
-					if 2.156 * ( (float64(len(r[keyList[i]]))/float64(count)) / (1+ariseTimesMap[q]) ) > hopeWin {
+					if 2.156*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])) > hopeWin {
 						//fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
 						// 将数学期望大于hopeWin的数值写入数据库
-						err := mysql.Write2Luck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count)) / (1+ariseTimesMap[q]), 2.156 * ( (float64(len(r[keyList[i]]))/float64(count)) / (1+ariseTimesMap[q]) ))
-						if err!=nil {
+						err := mysql.Write2Luck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q]), 2.156*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])))
+						if err != nil {
 							log.Printf("write to mysql_luck error\n")
 							return
 						}
@@ -731,7 +728,6 @@ func showThink(flag string, limit int, hopeWin float64) {
 		}
 		//log.Println(ariseTimesMap)
 
-
 		// 统计遗漏值和时间期数的关系
 		//for i := 1; i < 12; i++ {
 		//	r := calSpecificNumTimes(data, i)
@@ -741,11 +737,11 @@ func showThink(flag string, limit int, hopeWin float64) {
 		// 统计数字1出现遗漏值大于等于1的遗漏数值和对应期数
 		// 每次向luck表中遍历添加数值时, 先清除luck表中的全部内容
 		err = mysql.DeleteLuckTable(flag)
-		if err!=nil {
+		if err != nil {
 			log.Printf("清除luck %s 失败\n", flag)
 			return
 		}
-		for q:=1; q<12; q++ {
+		for q := 1; q < 12; q++ {
 			r := calSpecificNumTimes(data, q)
 			keyList := make([]int, 0)
 			for k, _ := range r {
@@ -753,19 +749,19 @@ func showThink(flag string, limit int, hopeWin float64) {
 			}
 			sort.Ints(keyList)
 			//fmt.Printf("%s: specific Num %d\n", flag, q)
-			for i:=0; i<len(keyList); i++ {
-				if keyList[i] >=0 {
+			for i := 0; i < len(keyList); i++ {
+				if keyList[i] >= 0 {
 					count := 0
 					for k, v := range r {
-						if k>=keyList[i] {
+						if k >= keyList[i] {
 							count += len(v)
 						}
 					}
-					if 2.156 * ( (float64(len(r[keyList[i]]))/float64(count)) / (1+ariseTimesMap[q]) ) > hopeWin {
+					if 2.156*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])) > hopeWin {
 						//fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
 						// 将数学期望大于hopeWin的数值写入数据库
-						err := mysql.Write2Luck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count)) / (1+ariseTimesMap[q]), 2.156 * ( (float64(len(r[keyList[i]]))/float64(count)) / (1+ariseTimesMap[q]) ))
-						if err!=nil {
+						err := mysql.Write2Luck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q]), 2.156*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])))
+						if err != nil {
 							log.Printf("write to mysql_luck error\n")
 							return
 						}
@@ -939,7 +935,7 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 		}
 		fmt.Printf("数字%d", specificNum)
 		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
-		ariseTimesMap[1] = (float64(ariseTimes)/float64(allTimes)-5.0/11.0)/(5.0/11.0)
+		ariseTimesMap[1] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 	case 2:
 		for i := 0; i < allTimes; i++ {
 			if queryData[i].Two == 1 {
@@ -948,7 +944,7 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 		}
 		fmt.Printf("数字%d", specificNum)
 		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
-		ariseTimesMap[2] = (float64(ariseTimes)/float64(allTimes)-5.0/11.0)/(5.0/11.0)
+		ariseTimesMap[2] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 	case 3:
 		for i := 0; i < allTimes; i++ {
 			if queryData[i].Three == 1 {
@@ -957,7 +953,7 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 		}
 		fmt.Printf("数字%d", specificNum)
 		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
-		ariseTimesMap[3] = (float64(ariseTimes)/float64(allTimes)-5.0/11.0)/(5.0/11.0)
+		ariseTimesMap[3] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 	case 4:
 		for i := 0; i < allTimes; i++ {
 			if queryData[i].Four == 1 {
@@ -966,7 +962,7 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 		}
 		fmt.Printf("数字%d", specificNum)
 		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
-		ariseTimesMap[4] = (float64(ariseTimes)/float64(allTimes)-5.0/11.0)/(5.0/11.0)
+		ariseTimesMap[4] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 
 	case 5:
 		for i := 0; i < allTimes; i++ {
@@ -976,7 +972,7 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 		}
 		fmt.Printf("数字%d", specificNum)
 		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
-		ariseTimesMap[5] = (float64(ariseTimes)/float64(allTimes)-5.0/11.0)/(5.0/11.0)
+		ariseTimesMap[5] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 
 	case 6:
 		for i := 0; i < allTimes; i++ {
@@ -986,7 +982,7 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 		}
 		fmt.Printf("数字%d", specificNum)
 		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
-		ariseTimesMap[6] = (float64(ariseTimes)/float64(allTimes)-5.0/11.0)/(5.0/11.0)
+		ariseTimesMap[6] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 
 	case 7:
 		for i := 0; i < allTimes; i++ {
@@ -996,7 +992,7 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 		}
 		fmt.Printf("数字%d", specificNum)
 		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
-		ariseTimesMap[7] = (float64(ariseTimes)/float64(allTimes)-5.0/11.0)/(5.0/11.0)
+		ariseTimesMap[7] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 
 	case 8:
 		for i := 0; i < allTimes; i++ {
@@ -1006,8 +1002,7 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 		}
 		fmt.Printf("数字%d", specificNum)
 		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
-		ariseTimesMap[8] = (float64(ariseTimes)/float64(allTimes)-5.0/11.0)/(5.0/11.0)
-
+		ariseTimesMap[8] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 
 	case 9:
 		for i := 0; i < allTimes; i++ {
@@ -1017,7 +1012,7 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 		}
 		fmt.Printf("数字%d", specificNum)
 		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
-		ariseTimesMap[9] = (float64(ariseTimes)/float64(allTimes)-5.0/11.0)/(5.0/11.0)
+		ariseTimesMap[9] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 
 	case 10:
 		for i := 0; i < allTimes; i++ {
@@ -1027,8 +1022,7 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 		}
 		fmt.Printf("数字%d", specificNum)
 		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
-		ariseTimesMap[10] = (float64(ariseTimes)/float64(allTimes)-5.0/11.0)/(5.0/11.0)
-
+		ariseTimesMap[10] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 
 	case 11:
 		for i := 0; i < allTimes; i++ {
@@ -1038,7 +1032,7 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 		}
 		fmt.Printf("数字%d", specificNum)
 		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
-		ariseTimesMap[11] = (float64(ariseTimes)/float64(allTimes)-5.0/11.0)/(5.0/11.0)
+		ariseTimesMap[11] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 
 	default:
 		log.Fatalln("未知错误!")
