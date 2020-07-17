@@ -89,8 +89,8 @@ func getLuckNum(prefix string) error {
 			m[i+1], _ = strconv.Atoi(v)
 		}
 	}
-	// 得到数据库中遗漏值和期望之间的关系
-	showThink(prefix, 0, hopeWin) // 首先, 更新luck表
+	// 更新luck表
+	showThink(prefix, 0, hopeWin)
 	// 拿到luck表中specific_num, leave_value, stop_probability, hope_income 数值
 	luckNumList, err := mysql.GetDataFromLuckTable(prefix)
 	if err != nil {
@@ -101,32 +101,35 @@ func getLuckNum(prefix string) error {
 	// 看看最新一期里面有没有什么机会?
 	fmt.Println(prefix, "这一期: ", iwant.SelectElement("td").Text())
 	nearestOrderNum := iwant.SelectElement("td").Text()
+	// 这一期所有符合要求的LuckNum都将放入willOrderLuckNum
+	var willOrderLuckNum []mysql.LuckNum
 	for k, v := range m {
-		var willOrderLuckNum []mysql.LuckNum
 		for _, luckNum := range luckNumList {
 			if k == luckNum.SpecificNum && v == luckNum.LeaveValue {
 				fmt.Printf("可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", luckNum.SpecificNum, luckNum.LeaveValue, luckNum.StopProbability, luckNum.HopeIncome)
 				willOrderLuckNum = append(willOrderLuckNum, luckNum)
 			}
 		}
-		if len(willOrderLuckNum) > 0 {
-			// 从willOrderLuckNum中找到数学期望最大的那个luckNum, 并将它写入到forecast_{jx/gd}表格中
-			vWant := willOrderLuckNum[0]
-			for _, v := range willOrderLuckNum {
-				if v.HopeIncome > vWant.HopeIncome {
-					vWant = v
-				}
+	}
+	if len(willOrderLuckNum) > 0 {
+		// 从willOrderLuckNum中找到数学期望最大的那个luckNum, 并将它写入到forecast_{jx/gd}表格中
+		vWant := willOrderLuckNum[0]
+		for _, v := range willOrderLuckNum {
+			if v.HopeIncome > vWant.HopeIncome {
+				vWant = v
 			}
-			// 将预测的数学期望最高的luckNum写入forecast_{jx/gd}中
-			forecastOrderNum, err := nextOne(nearestOrderNum)
-			if err != nil {
-				log.Println(err)
-			}
-			PushMsg(fmt.Sprintf("%s:forecast:%s 可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", prefix, forecastOrderNum, vWant.SpecificNum, vWant.LeaveValue, vWant.StopProbability, vWant.HopeIncome))
-			err = mysql.StoreResultToForecastTable(prefix, forecastOrderNum, vWant.SpecificNum)
-			if err != nil {
-				log.Println(err)
-			}
+		}
+		// 将预测的数学期望最高的luckNum写入forecast_{jx/gd}中
+		forecastOrderNum, err := nextOne(nearestOrderNum)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		PushMsg(fmt.Sprintf("%s:forecast:%s 可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", prefix, forecastOrderNum, vWant.SpecificNum, vWant.LeaveValue, vWant.StopProbability, vWant.HopeIncome))
+		err = mysql.StoreResultToForecastTable(prefix, forecastOrderNum, vWant.SpecificNum)
+		if err != nil {
+			log.Println(err)
+			return err
 		}
 	}
 	return nil
