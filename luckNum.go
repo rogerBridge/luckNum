@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/beevik/etree"
 	"go11x5/mysql"
@@ -104,11 +105,42 @@ func getLuckNum(prefix string) error {
 		for _, luckNum := range luckNumList {
 			if k==luckNum.SpecificNum && v==luckNum.LeaveValue {
 				fmt.Printf("可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n",luckNum.SpecificNum, luckNum.LeaveValue, luckNum.StopProbability, luckNum.HopeIncome)
-				PushMsg(fmt.Sprintf("%s:%s 可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", prefix, nearestOrderNum, luckNum.SpecificNum, luckNum.LeaveValue, luckNum.StopProbability, luckNum.HopeIncome))
+				forecastOrderNum, err := nextOne(nearestOrderNum)
+				if err!=nil {
+					log.Println(err)
+				}
+				PushMsg(fmt.Sprintf("%s:forecast:%s 可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", prefix, forecastOrderNum, luckNum.SpecificNum, luckNum.LeaveValue, luckNum.StopProbability, luckNum.HopeIncome))
+				// 将预测的数据存入forecast_{jx|gd} 表格
+				err = mysql.StoreResultToForecastTable(prefix, forecastOrderNum, luckNum.SpecificNum)
+				if err!=nil {
+					log.Println(err)
+				}
 			}
 		}
 	}
 	return nil
+}
+
+// 生成下一期orderNum
+func nextOne(thisOne string) (string,error) {
+	if len(thisOne) != 10 {
+		return "", errors.New("error length")
+	}
+	dateStr := thisOne[:8]
+	number := thisOne[8:]
+	numberInt, _ := strconv.Atoi(number)
+
+	if numberInt < 42 {
+		return dateStr+fmt.Sprintf("%02d", numberInt+1), nil
+	}else if numberInt == 42{
+		timeThisOne, err := time.Parse("20060102", dateStr)
+		if err!=nil {
+			return "", err
+		}
+		return timeThisOne.AddDate(0,0,1).Format("20060102")+"01", nil
+	}else {
+		return "", errors.New("unknown error")
+	}
 }
 
 func PushMsg(content string) {

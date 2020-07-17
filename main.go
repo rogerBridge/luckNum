@@ -75,17 +75,31 @@ func main() {
 
 	// 每个数字历史记录中的最大遗漏值
 	//统计遗漏值和时间期数的关系
-	data, err := mysql.QueryDataFromMysqlGd()
-	if err!=nil {
-		log.Fatalln(err)
-	}
-	for i := 1; i < 12; i++ {
-		r := calSpecificNumTimes(data, i)
-		//fmt.Println("specificNum: ",i, r)
-		calLeaveAndTimes(r, i)
-	}
+	//data, err := mysql.QueryDataFromMysqlGd()
+	//if err!=nil {
+	//	log.Fatalln(err)
+	//}
+	//for i := 1; i < 12; i++ {
+	//	r := calSpecificNumTimes(data, i)
+	//	//fmt.Println("specificNum: ",i, r)
+	//	calLeaveAndTimes(r, i)
+	//}
 
-
+	// 每天23:30验证当天的预测
+	for ;; {
+		t0 := time.Now()
+		if t0.Hour() == 23 && t0.Minute() == 30 {
+			err := mysql.DetectForecast("jx/")
+			if err!=nil {
+				log.Println(err)
+			}
+			err = mysql.DetectForecast("gd/")
+			if err!=nil {
+				log.Println(err)
+			}
+		}
+		time.Sleep(20*time.Second)
+	}
 }
 
 // 定时获取最新数据
