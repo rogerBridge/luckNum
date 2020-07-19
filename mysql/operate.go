@@ -267,11 +267,13 @@ func StoreResultToForecastTable(prefix string, orderNum string, forecastNum int)
 			return err
 		}
 		if ifExist == 1 {
-			log.Println(orderNum, "已存在")
+			log.Printf("%s:%s 存在于forecast表格中, 不用再次添加\n", prefix, orderNum)
+			//log.Println(orderNum, "已存在")
 			return nil
 		}
 		if ifExist == 0 {
-			log.Println(orderNum, "不存在")
+			log.Printf("%s:%s 不存在于forecast表格中, 可以添加\n", prefix, orderNum)
+			//log.Println(orderNum, "不存在")
 			_, err := conn.Exec("INSERT INTO db_play.forecast_gd (order_num, forecast_num) VALUES (?, ?)", orderNum, forecastNum)
 			if err!=nil {
 				log.Println(err)
@@ -289,11 +291,13 @@ func StoreResultToForecastTable(prefix string, orderNum string, forecastNum int)
 			return err
 		}
 		if ifExist == 1 {
-			log.Println(orderNum, "已存在")
+			log.Printf("%s:%s 存在于forecast表格中, 不用再次添加\n", prefix, orderNum)
+			//log.Println(orderNum, "已存在")
 			return nil
 		}
 		if ifExist == 0 {
-			log.Println(orderNum, "不存在")
+			//log.Println(orderNum, "不存在")
+			log.Printf("%s:%s 不存在于forecast表格中, 可以添加\n", prefix, orderNum)
 			_, err := conn.Exec("INSERT INTO db_play.forecast_jx (order_num, forecast_num) VALUES (?, ?)", orderNum, forecastNum)
 			if err!=nil {
 				log.Println(err)
@@ -324,6 +328,104 @@ func DetectForecast(prefix string) error {
 		11: "eleven",
 	}
 	var detectList []DetectForecast
+
+	if prefix == "gd/" {
+		// 下一个优化的点: 只验证当天的order_num和forecast_num
+		rows, err := conn.Query("SELECT order_num, forecast_num FROM db_play.forecast_gd")
+		if err!=nil {
+			log.Println(err)
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			d := DetectForecast{}
+			err := rows.Scan(&d.OrderNum, &d.ForecastNum)
+			if err!=nil {
+				log.Println(err)
+				return err
+			}
+			detectList = append(detectList, d)
+		}
+		// 拿到detectList之后, 把真实的值写入到forecast表里
+		for _, v := range detectList {
+			var isTrue int
+			queryString := "SELECT " + contrast[v.ForecastNum] + " FROM gd11x5 WHERE order_number = ?"
+			//fmt.Println(queryString)
+			err := conn.QueryRow(queryString, v.OrderNum).Scan(&isTrue)
+			if err!=nil {
+				log.Println("获取真实结果时: ", err)
+				return err
+			}
+			_, err = conn.Exec("UPDATE forecast_gd SET forecast_result = ? WHERE order_num = ? AND forecast_num = ?", isTrue, v.OrderNum, v.ForecastNum)
+			if err!=nil {
+				log.Println(err)
+				return err
+			}
+		}
+		return nil
+	}
+
+	if prefix == "jx/" {
+		rows, err := conn.Query("SELECT order_num, forecast_num FROM db_play.forecast_jx")
+		if err!=nil {
+			log.Println(err)
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			d := DetectForecast{}
+			err := rows.Scan(&d.OrderNum, &d.ForecastNum)
+			if err!=nil {
+				log.Println(err)
+				return err
+			}
+			detectList = append(detectList, d)
+		}
+		// 拿到detectList之后, 把真实的值写入到forecast表里
+		for _, v := range detectList {
+			var isTrue int
+			queryString := "SELECT " + contrast[v.ForecastNum] + " FROM jx11x5 WHERE order_number = ?"
+			//fmt.Println(queryString)
+			err := conn.QueryRow(queryString, v.OrderNum).Scan(&isTrue)
+			if err!=nil {
+				log.Println("获取真实结果时: ", err)
+				return err
+			}
+			_, err = conn.Exec("UPDATE forecast_jx SET forecast_result = ? WHERE order_num = ? AND forecast_num = ?", isTrue, v.OrderNum, v.ForecastNum)
+			if err!=nil {
+				log.Println(err)
+				return err
+			}
+		}
+		return nil
+	}
+	return errors.New("unsupported prefix")
+}
+
+// 验证之前的预测是否为真
+func DetectForecastImmediately(prefix string) error {
+	conn := InitMysqlConn()
+	defer conn.Close()
+
+	type DetectForecast struct {
+		OrderNum string
+		ForecastNum int
+	}
+	contrast := map[int]string{
+		1: "one",
+		2: "two",
+		3: "three",
+		4: "four",
+		5: "five",
+		6: "six",
+		7: "seven",
+		8: "eight",
+		9: "nine",
+		10: "ten",
+		11: "eleven",
+	}
+	var detectList []DetectForecast
+
 	if prefix == "gd/" {
 		// 下一个优化的点: 只验证当天的order_num和forecast_num
 		rows, err := conn.Query("SELECT order_num, forecast_num FROM db_play.forecast_gd")

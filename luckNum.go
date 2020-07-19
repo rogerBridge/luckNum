@@ -125,7 +125,14 @@ func getLuckNum(prefix string) error {
 			log.Println(err)
 			return err
 		}
-		PushMsg(fmt.Sprintf("%s:forecast:%s 可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", prefix, forecastOrderNum, vWant.SpecificNum, vWant.LeaveValue, vWant.StopProbability, vWant.HopeIncome))
+		// PushMsg(fmt.Sprintf("%s:forecast:%s 可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", prefix, forecastOrderNum, vWant.SpecificNum, vWant.LeaveValue, vWant.StopProbability, vWant.HopeIncome))
+		// 停止推送消息到 Bot
+		//err = pushMsgToBot(fmt.Sprintf("%s:forecast:%s 可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", prefix, forecastOrderNum, vWant.SpecificNum, vWant.LeaveValue, vWant.StopProbability, vWant.HopeIncome))
+		//if err!=nil {
+		//	log.Println(err)
+		//	return err
+		//}
+
 		err = mysql.StoreResultToForecastTable(prefix, forecastOrderNum, vWant.SpecificNum)
 		if err != nil {
 			log.Println(err)

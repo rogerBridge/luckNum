@@ -51,12 +51,10 @@ func main() {
 			err := getLuckNum("gd/")
 			if err!=nil {
 				log.Printf("%+v\n", err)
-				return
 			}
 			err = getLuckNum("jx/")
 			if err!=nil {
 				log.Printf("%+v\n", err)
-				return
 			}
 		}
 		time.Sleep(10*time.Minute)
@@ -85,17 +83,32 @@ func main() {
 	//	calLeaveAndTimes(r, i)
 	//}
 
-	// 每天23:30验证当天的预测
-	// 立即开始预测
-	//err := mysql.DetectForecast("jx/")
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//err = mysql.DetectForecast("gd/")
-	//if err != nil {
-	//	log.Println(err)
+	////每天23:30验证当天的预测
+	//for ;; {
+	//	t0 := time.Now()
+	//	if t0.Hour() == 23 && t0.Minute() == 30 {
+	//		err := mysql.DetectForecast("jx/")
+	//		if err != nil {
+	//			log.Println(err)
+	//		}
+	//		err = mysql.DetectForecast("gd/")
+	//		if err != nil {
+	//			log.Println(err)
+	//		}
+	//	}
+	//	time.Sleep(20*time.Second)
 	//}
 
+
+	////立即开始预测
+	//err := mysql.DetectForecastImmediately("jx/")
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//err = mysql.DetectForecastImmediately("gd/")
+	//if err != nil {
+	//	log.Println(err)
+	//}
 }
 
 // 定时获取最新数据
