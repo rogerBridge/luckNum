@@ -3,8 +3,10 @@ package mysql
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
+	"sort"
 )
 
 func InitMysqlConn() *sql.DB {
@@ -172,7 +174,7 @@ func QueryDataFromMysqlJxSomeDay(dateStr string) ([]QueryData, error) {
 	return queryDataList, nil
 }
 
-func Write2Luck(prefix string, specificNum int, leaveNum int, stopProbability float64, hopeIncome float64) error{
+func Write2Luck(prefix string, specificNum int, leaveNum int, stopProbability float64, hopeIncome float64) error {
 	if prefix == "jx/" {
 		// Result.LastInsertId() 表示受影响的最近的columnsID
 		_, err := conn.Exec("INSERT INTO db_play.jx_luck(specific_num, leave_value, stop_probability, hope_income) VALUES (?, ?, ?, ?)", specificNum, leaveNum, stopProbability, hopeIncome)
@@ -196,14 +198,14 @@ func Write2Luck(prefix string, specificNum int, leaveNum int, stopProbability fl
 func DeleteLuckTable(prefix string) error {
 	if prefix == "jx/" {
 		_, err := conn.Exec("DELETE FROM jx_luck")
-		if err!=nil {
+		if err != nil {
 			return err
 		}
 		return nil
 	}
 	if prefix == "gd/" {
 		_, err := conn.Exec("DELETE FROM gd_luck")
-		if err!=nil {
+		if err != nil {
 			return err
 		}
 		return nil
@@ -212,10 +214,10 @@ func DeleteLuckTable(prefix string) error {
 }
 
 type LuckNum struct {
-	SpecificNum int
-	LeaveValue int
+	SpecificNum     int
+	LeaveValue      int
 	StopProbability float64
-	HopeIncome float64
+	HopeIncome      float64
 }
 
 func GetDataFromLuckTable(prefix string) ([]LuckNum, error) {
@@ -275,7 +277,7 @@ func StoreResultToForecastTable(prefix string, orderNum string, forecastNum int)
 			log.Printf("%s:%s 不存在于forecast表格中, 可以添加\n", prefix, orderNum)
 			//log.Println(orderNum, "不存在")
 			_, err := conn.Exec("INSERT INTO db_play.forecast_gd (order_num, forecast_num) VALUES (?, ?)", orderNum, forecastNum)
-			if err!=nil {
+			if err != nil {
 				log.Println(err)
 				return err
 			}
@@ -299,7 +301,7 @@ func StoreResultToForecastTable(prefix string, orderNum string, forecastNum int)
 			//log.Println(orderNum, "不存在")
 			log.Printf("%s:%s 不存在于forecast表格中, 可以添加\n", prefix, orderNum)
 			_, err := conn.Exec("INSERT INTO db_play.forecast_jx (order_num, forecast_num) VALUES (?, ?)", orderNum, forecastNum)
-			if err!=nil {
+			if err != nil {
 				log.Println(err)
 				return err
 			}
@@ -310,29 +312,29 @@ func StoreResultToForecastTable(prefix string, orderNum string, forecastNum int)
 
 // 验证之前的预测是否为真
 func DetectForecast(prefix string) error {
-	type DetectForecast struct {
-		OrderNum string
-		ForecastNum int
-	}
 	contrast := map[int]string{
-		1: "one",
-		2: "two",
-		3: "three",
-		4: "four",
-		5: "five",
-		6: "six",
-		7: "seven",
-		8: "eight",
-		9: "nine",
+		1:  "one",
+		2:  "two",
+		3:  "three",
+		4:  "four",
+		5:  "five",
+		6:  "six",
+		7:  "seven",
+		8:  "eight",
+		9:  "nine",
 		10: "ten",
 		11: "eleven",
+	}
+	type DetectForecast struct {
+		OrderNum    string
+		ForecastNum int
 	}
 	var detectList []DetectForecast
 
 	if prefix == "gd/" {
 		// 下一个优化的点: 只验证当天的order_num和forecast_num
 		rows, err := conn.Query("SELECT order_num, forecast_num FROM db_play.forecast_gd")
-		if err!=nil {
+		if err != nil {
 			log.Println(err)
 			return err
 		}
@@ -340,7 +342,7 @@ func DetectForecast(prefix string) error {
 		for rows.Next() {
 			d := DetectForecast{}
 			err := rows.Scan(&d.OrderNum, &d.ForecastNum)
-			if err!=nil {
+			if err != nil {
 				log.Println(err)
 				return err
 			}
@@ -352,12 +354,12 @@ func DetectForecast(prefix string) error {
 			queryString := "SELECT " + contrast[v.ForecastNum] + " FROM gd11x5 WHERE order_number = ?"
 			//fmt.Println(queryString)
 			err := conn.QueryRow(queryString, v.OrderNum).Scan(&isTrue)
-			if err!=nil {
+			if err != nil {
 				log.Println("获取真实结果时: ", err)
 				return err
 			}
 			_, err = conn.Exec("UPDATE forecast_gd SET forecast_result = ? WHERE order_num = ? AND forecast_num = ?", isTrue, v.OrderNum, v.ForecastNum)
-			if err!=nil {
+			if err != nil {
 				log.Println(err)
 				return err
 			}
@@ -367,7 +369,7 @@ func DetectForecast(prefix string) error {
 
 	if prefix == "jx/" {
 		rows, err := conn.Query("SELECT order_num, forecast_num FROM db_play.forecast_jx")
-		if err!=nil {
+		if err != nil {
 			log.Println(err)
 			return err
 		}
@@ -375,7 +377,7 @@ func DetectForecast(prefix string) error {
 		for rows.Next() {
 			d := DetectForecast{}
 			err := rows.Scan(&d.OrderNum, &d.ForecastNum)
-			if err!=nil {
+			if err != nil {
 				log.Println(err)
 				return err
 			}
@@ -387,12 +389,12 @@ func DetectForecast(prefix string) error {
 			queryString := "SELECT " + contrast[v.ForecastNum] + " FROM jx11x5 WHERE order_number = ?"
 			//fmt.Println(queryString)
 			err := conn.QueryRow(queryString, v.OrderNum).Scan(&isTrue)
-			if err!=nil {
+			if err != nil {
 				log.Println("获取真实结果时: ", err)
 				return err
 			}
 			_, err = conn.Exec("UPDATE forecast_jx SET forecast_result = ? WHERE order_num = ? AND forecast_num = ?", isTrue, v.OrderNum, v.ForecastNum)
-			if err!=nil {
+			if err != nil {
 				log.Println(err)
 				return err
 			}
@@ -408,19 +410,19 @@ func DetectForecastImmediately(prefix string) error {
 	defer conn.Close()
 
 	type DetectForecast struct {
-		OrderNum string
+		OrderNum    string
 		ForecastNum int
 	}
 	contrast := map[int]string{
-		1: "one",
-		2: "two",
-		3: "three",
-		4: "four",
-		5: "five",
-		6: "six",
-		7: "seven",
-		8: "eight",
-		9: "nine",
+		1:  "one",
+		2:  "two",
+		3:  "three",
+		4:  "four",
+		5:  "five",
+		6:  "six",
+		7:  "seven",
+		8:  "eight",
+		9:  "nine",
 		10: "ten",
 		11: "eleven",
 	}
@@ -429,7 +431,7 @@ func DetectForecastImmediately(prefix string) error {
 	if prefix == "gd/" {
 		// 下一个优化的点: 只验证当天的order_num和forecast_num
 		rows, err := conn.Query("SELECT order_num, forecast_num FROM db_play.forecast_gd")
-		if err!=nil {
+		if err != nil {
 			log.Println(err)
 			return err
 		}
@@ -437,7 +439,7 @@ func DetectForecastImmediately(prefix string) error {
 		for rows.Next() {
 			d := DetectForecast{}
 			err := rows.Scan(&d.OrderNum, &d.ForecastNum)
-			if err!=nil {
+			if err != nil {
 				log.Println(err)
 				return err
 			}
@@ -449,12 +451,12 @@ func DetectForecastImmediately(prefix string) error {
 			queryString := "SELECT " + contrast[v.ForecastNum] + " FROM gd11x5 WHERE order_number = ?"
 			//fmt.Println(queryString)
 			err := conn.QueryRow(queryString, v.OrderNum).Scan(&isTrue)
-			if err!=nil {
+			if err != nil {
 				log.Println("获取真实结果时: ", err)
 				return err
 			}
 			_, err = conn.Exec("UPDATE forecast_gd SET forecast_result = ? WHERE order_num = ? AND forecast_num = ?", isTrue, v.OrderNum, v.ForecastNum)
-			if err!=nil {
+			if err != nil {
 				log.Println(err)
 				return err
 			}
@@ -464,7 +466,7 @@ func DetectForecastImmediately(prefix string) error {
 
 	if prefix == "jx/" {
 		rows, err := conn.Query("SELECT order_num, forecast_num FROM db_play.forecast_jx")
-		if err!=nil {
+		if err != nil {
 			log.Println(err)
 			return err
 		}
@@ -472,7 +474,7 @@ func DetectForecastImmediately(prefix string) error {
 		for rows.Next() {
 			d := DetectForecast{}
 			err := rows.Scan(&d.OrderNum, &d.ForecastNum)
-			if err!=nil {
+			if err != nil {
 				log.Println(err)
 				return err
 			}
@@ -484,12 +486,12 @@ func DetectForecastImmediately(prefix string) error {
 			queryString := "SELECT " + contrast[v.ForecastNum] + " FROM jx11x5 WHERE order_number = ?"
 			//fmt.Println(queryString)
 			err := conn.QueryRow(queryString, v.OrderNum).Scan(&isTrue)
-			if err!=nil {
+			if err != nil {
 				log.Println("获取真实结果时: ", err)
 				return err
 			}
 			_, err = conn.Exec("UPDATE forecast_jx SET forecast_result = ? WHERE order_num = ? AND forecast_num = ?", isTrue, v.OrderNum, v.ForecastNum)
-			if err!=nil {
+			if err != nil {
 				log.Println(err)
 				return err
 			}
@@ -497,4 +499,94 @@ func DetectForecastImmediately(prefix string) error {
 		return nil
 	}
 	return errors.New("unsupported prefix")
+}
+
+type ForecastProve struct {
+	OrderNum       string
+	ForecastNum    int
+	ForecastResult int
+}
+
+func StatisticsForecast(prefix string) (string, error) {
+	var forecastList []ForecastProve
+	if prefix == "gd/" {
+		allLines := 0
+		err := conn.QueryRow("SELECT count(*) FROM forecast_gd").Scan(&allLines)
+		if err != nil {
+			log.Println(err)
+			return "", err
+		}
+		rows, err := conn.Query("SELECT order_num, forecast_num, forecast_result FROM forecast_gd ORDER BY id LIMIT ?", allLines-1)
+		if err != nil {
+			log.Printf("%v\n", err)
+			return "", err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var f = ForecastProve{}
+			err := rows.Scan(&f.OrderNum, &f.ForecastNum, &f.ForecastResult)
+			if err != nil {
+				log.Printf("%v\n", err)
+				return "", err
+			}
+			forecastList = append(forecastList, f)
+		}
+		// 开始统计, 总猜测次数, 猜错次数, 占比, 猜对次数, 占比, 最大猜错次数
+		return StatisticsForecastList(forecastList, prefix), nil
+	}
+	if prefix == "jx/" {
+		allLines := 0
+		err := conn.QueryRow("SELECT count(*) FROM forecast_jx").Scan(&allLines)
+		if err != nil {
+			log.Println(err)
+			return "", err
+		}
+		rows, err := conn.Query("SELECT order_num, forecast_num, forecast_result FROM forecast_jx ORDER BY id LIMIT ?", allLines-1)
+		if err != nil {
+			log.Printf("%v\n", err)
+			return "", err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var f = ForecastProve{}
+			err := rows.Scan(&f.OrderNum, &f.ForecastNum, &f.ForecastResult)
+			if err != nil {
+				log.Printf("%v\n", err)
+				return "", err
+			}
+			forecastList = append(forecastList, f)
+		}
+		// 开始统计, 总猜测次数, 猜错次数, 占比, 猜对次数, 占比, 最大猜错次数
+		return StatisticsForecastList(forecastList, prefix), nil
+	}
+	return "", errors.New("不受支持的prefix类型")
+}
+
+// 对从 forecast 表格里面拿到的数据进行加工处理, 输出字符串
+// 开始统计, 总猜测次数, 猜错次数, 占比, 猜对次数, 占比, 最大猜错次数
+func StatisticsForecastList(data []ForecastProve, prefix string) string {
+	allGuessNumber := len(data)
+	allGuessWrong := 0
+	allGuessTrue := 0
+	allGuessContinousWrongList := make([]int, 0)
+	for _, v := range data {
+		if v.ForecastResult == 1 {
+			allGuessTrue += 1
+		}
+		if v.ForecastResult == 0 {
+			allGuessWrong += 1
+		}
+	}
+	singleResult := 0
+	for _, v := range data {
+		if v.ForecastResult == 0 {
+			singleResult += 1
+		} else {
+			allGuessContinousWrongList = append(allGuessContinousWrongList, singleResult)
+			singleResult = 0
+		}
+	}
+	sort.Ints(allGuessContinousWrongList)
+	maxSingle := allGuessContinousWrongList[len(allGuessContinousWrongList)-1]
+	return fmt.Sprintf("%s: 总猜测数量: %d, 猜对: %d次, 猜错: %d次, 最大连续猜错数量: %d次\n", prefix, allGuessNumber, allGuessTrue, allGuessWrong, maxSingle)
 }

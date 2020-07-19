@@ -44,21 +44,21 @@ func main() {
 	//}
 	//timingGetData()
 
-	//筛选符合要求的数学期望
-	for ;; {
-		t0 := time.Now()
-		if t0.Hour() > 8 && t0.Hour() < 24 {
-			err := getLuckNum("gd/")
-			if err!=nil {
-				log.Printf("%+v\n", err)
-			}
-			err = getLuckNum("jx/")
-			if err!=nil {
-				log.Printf("%+v\n", err)
-			}
-		}
-		time.Sleep(10*time.Minute)
-	}
+	////筛选符合要求的数学期望
+	//for ;; {
+	//	t0 := time.Now()
+	//	if t0.Hour() > 8 && t0.Hour() < 24 {
+	//		err := getLuckNum("gd/")
+	//		if err!=nil {
+	//			log.Printf("%+v\n", err)
+	//		}
+	//		err = getLuckNum("jx/")
+	//		if err!=nil {
+	//			log.Printf("%+v\n", err)
+	//		}
+	//	}
+	//	time.Sleep(10*time.Minute)
+	//}
 
 	////特定日期概率
 	//err := getSingleDayProbability(time.Now().Format("20060102"), prefix)
@@ -83,22 +83,56 @@ func main() {
 	//	calLeaveAndTimes(r, i)
 	//}
 
-	////每天23:30验证当天的预测
-	//for ;; {
-	//	t0 := time.Now()
-	//	if t0.Hour() == 23 && t0.Minute() == 30 {
-	//		err := mysql.DetectForecast("jx/")
-	//		if err != nil {
-	//			log.Println(err)
-	//		}
-	//		err = mysql.DetectForecast("gd/")
-	//		if err != nil {
-	//			log.Println(err)
-	//		}
-	//	}
-	//	time.Sleep(20*time.Second)
-	//}
+	//每天23:15验证当天的预测
+	for ;; {
+		t0 := time.Now()
+		if t0.Hour() == 23 && t0.Minute() == 15 {
+			err := mysql.DetectForecast("jx/")
+			if err != nil {
+				log.Println(err)
+			}
+			err = mysql.DetectForecast("gd/")
+			if err != nil {
+				log.Println(err)
+			}
+			// 发送统计信息给bot
+			msgGd, err := mysql.StatisticsForecast("gd/")
+			if err!=nil {
+				log.Println(err)
+			}
+			msgJx, err := mysql.StatisticsForecast("jx/")
+			if err!=nil {
+				log.Println(err)
+			}
+			err = pushMsgToBot(msgGd+msgJx)
+			if err!=nil {
+				log.Printf("Send msg to bot error\n")
+			}
+		}
+		time.Sleep(30*time.Second)
+	}
 
+	//err := mysql.DetectForecast("jx/")
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//err = mysql.DetectForecast("gd/")
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//// 发送统计信息给bot
+	//msgGd, err := mysql.StatisticsForecast("gd/")
+	//if err!=nil {
+	//	log.Println(err)
+	//}
+	//msgJx, err := mysql.StatisticsForecast("jx/")
+	//if err!=nil {
+	//	log.Println(err)
+	//}
+	//err = pushMsgToBot(msgGd+msgJx)
+	//if err!=nil {
+	//	log.Printf("Send msg to bot error\n")
+	//}
 
 	////立即开始预测
 	//err := mysql.DetectForecastImmediately("jx/")
