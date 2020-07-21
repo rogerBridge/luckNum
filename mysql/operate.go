@@ -7,6 +7,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"sort"
+	"strconv"
 )
 
 func InitMysqlConn() *sql.DB {
@@ -504,19 +505,20 @@ func DetectForecastImmediately(prefix string) error {
 type ForecastProve struct {
 	OrderNum       string
 	ForecastNum    int
-	ForecastResult int
+	ForecastResult interface{}
 }
 
+// 统计整理statistics表格里面的各种数据
 func StatisticsForecast(prefix string) (string, error) {
 	var forecastList []ForecastProve
 	if prefix == "gd/" {
-		allLines := 0
-		err := conn.QueryRow("SELECT count(*) FROM forecast_gd").Scan(&allLines)
-		if err != nil {
-			log.Println(err)
-			return "", err
-		}
-		rows, err := conn.Query("SELECT order_num, forecast_num, forecast_result FROM forecast_gd ORDER BY id LIMIT ?", allLines-1)
+		//allLines := 0
+		//err := conn.QueryRow("SELECT count(*) FROM forecast_gd").Scan(&allLines)
+		//if err != nil {
+		//	log.Println(err)
+		//	return "", err
+		//}
+		rows, err := conn.Query("SELECT order_num, forecast_num, forecast_result FROM forecast_gd")
 		if err != nil {
 			log.Printf("%v\n", err)
 			return "", err
@@ -529,19 +531,25 @@ func StatisticsForecast(prefix string) (string, error) {
 				log.Printf("%v\n", err)
 				return "", err
 			}
-			forecastList = append(forecastList, f)
+			// 只将forecastResult结果为int的数据存入forecastList
+			fmt.Println()
+			if _, ok := f.ForecastResult.([]uint8); ok {
+				num, _ := strconv.Atoi(string(f.ForecastResult.([]uint8)[0]))
+				forecastList = append(forecastList, ForecastProve{f.OrderNum, f.ForecastNum, num})
+			}
 		}
+		//fmt.Println(prefix, forecastList)
 		// 开始统计, 总猜测次数, 猜错次数, 占比, 猜对次数, 占比, 最大猜错次数
 		return StatisticsForecastList(forecastList, prefix), nil
 	}
 	if prefix == "jx/" {
-		allLines := 0
-		err := conn.QueryRow("SELECT count(*) FROM forecast_jx").Scan(&allLines)
-		if err != nil {
-			log.Println(err)
-			return "", err
-		}
-		rows, err := conn.Query("SELECT order_num, forecast_num, forecast_result FROM forecast_jx ORDER BY id LIMIT ?", allLines-1)
+		//allLines := 0
+		//err := conn.QueryRow("SELECT count(*) FROM forecast_gd").Scan(&allLines)
+		//if err != nil {
+		//	log.Println(err)
+		//	return "", err
+		//}
+		rows, err := conn.Query("SELECT order_num, forecast_num, forecast_result FROM forecast_jx")
 		if err != nil {
 			log.Printf("%v\n", err)
 			return "", err
@@ -554,8 +562,14 @@ func StatisticsForecast(prefix string) (string, error) {
 				log.Printf("%v\n", err)
 				return "", err
 			}
-			forecastList = append(forecastList, f)
+			// 只将forecastResult结果为int的数据存入forecastList
+			fmt.Println()
+			if _, ok := f.ForecastResult.([]uint8); ok {
+				num, _ := strconv.Atoi(string(f.ForecastResult.([]uint8)[0]))
+				forecastList = append(forecastList, ForecastProve{f.OrderNum, f.ForecastNum, num})
+			}
 		}
+		//fmt.Println(prefix, forecastList)
 		// 开始统计, 总猜测次数, 猜错次数, 占比, 猜对次数, 占比, 最大猜错次数
 		return StatisticsForecastList(forecastList, prefix), nil
 	}
@@ -570,16 +584,16 @@ func StatisticsForecastList(data []ForecastProve, prefix string) string {
 	allGuessTrue := 0
 	allGuessContinousWrongList := make([]int, 0)
 	for _, v := range data {
-		if v.ForecastResult == 1 {
+		if v.ForecastResult.(int) == 1 {
 			allGuessTrue += 1
 		}
-		if v.ForecastResult == 0 {
+		if v.ForecastResult.(int) == 0 {
 			allGuessWrong += 1
 		}
 	}
 	singleResult := 0
 	for _, v := range data {
-		if v.ForecastResult == 0 {
+		if v.ForecastResult.(int) == 0 {
 			singleResult += 1
 		} else {
 			allGuessContinousWrongList = append(allGuessContinousWrongList, singleResult)

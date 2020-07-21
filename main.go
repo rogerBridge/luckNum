@@ -112,6 +112,29 @@ func main() {
 		time.Sleep(30*time.Second)
 	}
 
+	// 立刻验证当前的猜测
+	//err := mysql.DetectForecast("jx/")
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//err = mysql.DetectForecast("gd/")
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//// 发送统计信息给bot
+	//msgGd, err := mysql.StatisticsForecast("gd/")
+	//if err!=nil {
+	//	log.Println(err)
+	//}
+	//msgJx, err := mysql.StatisticsForecast("jx/")
+	//if err!=nil {
+	//	log.Println(err)
+	//}
+	//err = pushMsgToBot(msgGd+msgJx)
+	//if err!=nil {
+	//	log.Printf("Send msg to bot error\n")
+	//}
+
 	//err := mysql.DetectForecast("jx/")
 	//if err != nil {
 	//	log.Println(err)
