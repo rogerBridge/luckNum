@@ -25,26 +25,19 @@ import (
 var hopeWin = 1.02
 
 func main() {
-	//dayList := []int{1, 2, 3, 5, 7, 14, 21, 30, 60, 90, 120, 180, 360}
-	//for i := 0; i < len(dayList); i++
-	//	fmt.Printf("近%d天\n", dayList[i])
-	//	showThink("jx/", 42*dayList[i])
-	//}
-	////fmt.Println(orderNumConvertToDate("20200521022"))
+	////立即更新不含今天数据的所有数据到mysql中
+	dateList := constructDate()
+	dateRangeLength := len(dateList) - 1 // 不包含今天
+	for _, v := range dateList[:dateRangeLength] {
+		saveData2MysqlByDate("gd/", v)
+		saveData2MysqlByDate("jx/", v)
+		time.Sleep(time.Second)
+	}
 
-	// 每天23:30运行同步程序
-	//saveData2MysqlByDate("jx/", time.Now().Format("2006-01-02"))
-	//saveData2Mysql("gd/")
-	//saveData2MysqlByDate("jx/", "2020-07-12")
-
-	//// 更新最新数据
-	//err := getNewestData(prefix)
-	//if err!=nil {
-	//	log.Println(err)
-	//}
+	//// 每隔1min 更新最新数据
 	//timingGetData()
 
-	////筛选符合要求的数学期望
+	//// every 10 mins, 筛选符合要求的数学期望 lucky
 	//for ;; {
 	//	t0 := time.Now()
 	//	if t0.Hour() > 8 && t0.Hour() < 24 {
@@ -60,57 +53,35 @@ func main() {
 	//	time.Sleep(10*time.Minute)
 	//}
 
-	////特定日期概率
-	//err := getSingleDayProbability(time.Now().Format("20060102"), prefix)
-	//if err!=nil {
-	//	panic(err)
+	////每天23:15验证当天的预测
+	//for ;; {
+	//	t0 := time.Now()
+	//	if t0.Hour() == 23 && t0.Minute() == 15 {
+	//		err := mysql.DetectForecast("jx/")
+	//		if err != nil {
+	//			log.Println(err)
+	//		}
+	//		err = mysql.DetectForecast("gd/")
+	//		if err != nil {
+	//			log.Println(err)
+	//		}
+	//		// 发送统计信息给bot
+	//		msgGd, err := mysql.StatisticsForecast("gd/")
+	//		if err!=nil {
+	//			log.Println(err)
+	//		}
+	//		msgJx, err := mysql.StatisticsForecast("jx/")
+	//		if err!=nil {
+	//			log.Println(err)
+	//		}
+	//		err = pushMsgToBot(msgGd+msgJx)
+	//		if err!=nil {
+	//			log.Printf("Send msg to bot error\n")
+	//		}
+	//		time.Sleep(30*time.Minute)
+	//	}
+	//	time.Sleep(30*time.Second)
 	//}
-	//
-	//// 开始程序, 更新luck表中的数据到最新
-	//fmt.Println("开始评估gd近", limit, "期...")
-	//showThink("gd/", 0, hopeWin)
-	//httpServer()
-
-	// 每个数字历史记录中的最大遗漏值
-	//统计遗漏值和时间期数的关系
-	//data, err := mysql.QueryDataFromMysqlGd()
-	//if err!=nil {
-	//	log.Fatalln(err)
-	//}
-	//for i := 1; i < 12; i++ {
-	//	r := calSpecificNumTimes(data, i)
-	//	//fmt.Println("specificNum: ",i, r)
-	//	calLeaveAndTimes(r, i)
-	//}
-
-	//每天23:15验证当天的预测
-	for ;; {
-		t0 := time.Now()
-		if t0.Hour() == 23 && t0.Minute() == 15 {
-			err := mysql.DetectForecast("jx/")
-			if err != nil {
-				log.Println(err)
-			}
-			err = mysql.DetectForecast("gd/")
-			if err != nil {
-				log.Println(err)
-			}
-			// 发送统计信息给bot
-			msgGd, err := mysql.StatisticsForecast("gd/")
-			if err!=nil {
-				log.Println(err)
-			}
-			msgJx, err := mysql.StatisticsForecast("jx/")
-			if err!=nil {
-				log.Println(err)
-			}
-			err = pushMsgToBot(msgGd+msgJx)
-			if err!=nil {
-				log.Printf("Send msg to bot error\n")
-			}
-		}
-		time.Sleep(30*time.Second)
-	}
 
 	// 立刻验证当前的猜测
 	//err := mysql.DetectForecast("jx/")
@@ -133,38 +104,6 @@ func main() {
 	//err = pushMsgToBot(msgGd+msgJx)
 	//if err!=nil {
 	//	log.Printf("Send msg to bot error\n")
-	//}
-
-	//err := mysql.DetectForecast("jx/")
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//err = mysql.DetectForecast("gd/")
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//// 发送统计信息给bot
-	//msgGd, err := mysql.StatisticsForecast("gd/")
-	//if err!=nil {
-	//	log.Println(err)
-	//}
-	//msgJx, err := mysql.StatisticsForecast("jx/")
-	//if err!=nil {
-	//	log.Println(err)
-	//}
-	//err = pushMsgToBot(msgGd+msgJx)
-	//if err!=nil {
-	//	log.Printf("Send msg to bot error\n")
-	//}
-
-	////立即开始预测
-	//err := mysql.DetectForecastImmediately("jx/")
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//err = mysql.DetectForecastImmediately("gd/")
-	//if err != nil {
-	//	log.Println(err)
 	//}
 }
 

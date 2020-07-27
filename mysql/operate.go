@@ -2,16 +2,39 @@ package mysql
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
+	"os"
 	"sort"
 	"strconv"
 )
 
+func ReadConfig(file string) string {
+	f, err := os.Open(file)
+	if err!=nil {
+		log.Fatalln(err)
+	}
+	type config struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+		IpAddress string `json:"ipAddress"`
+		Port string `json:"port"`
+		Database string `json:"database"`
+	}
+	var c config
+	err = json.NewDecoder(f).Decode(&c)
+	if err!=nil {
+		log.Fatalln(err)
+	}
+	//fmt.Println(fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", c.Username, c.Password, c.IpAddress, c.Port, c.Database))
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", c.Username, c.Password, c.IpAddress, c.Port, c.Database)
+}
+
 func InitMysqlConn() *sql.DB {
-	db, err := sql.Open("mysql", "leo:123456@tcp(127.0.0.1:3306)/db_play")
+	db, err := sql.Open("mysql", ReadConfig("mysqlConfig.json"))
 	if err != nil {
 		log.Fatalf("conn establish error\n")
 	}
@@ -512,12 +535,6 @@ type ForecastProve struct {
 func StatisticsForecast(prefix string) (string, error) {
 	var forecastList []ForecastProve
 	if prefix == "gd/" {
-		//allLines := 0
-		//err := conn.QueryRow("SELECT count(*) FROM forecast_gd").Scan(&allLines)
-		//if err != nil {
-		//	log.Println(err)
-		//	return "", err
-		//}
 		rows, err := conn.Query("SELECT order_num, forecast_num, forecast_result FROM forecast_gd")
 		if err != nil {
 			log.Printf("%v\n", err)
