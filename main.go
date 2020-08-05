@@ -25,6 +25,7 @@ import (
 var hopeWin = 1.02
 
 func main() {
+	pushMsgToBot("hello")
 	////立即更新不含今天数据的所有数据到mysql中
 	//dateList := constructDate()
 	//dateRangeLength := len(dateList) - 1 // 不包含今天
@@ -53,37 +54,37 @@ func main() {
 	//	time.Sleep(10*time.Minute)
 	//}
 
-	//每天23:15验证当天的预测
-	for {
-		t0 := time.Now()
-		if t0.Hour() == 23 && t0.Minute() == 15 {
-			err := mysql.DetectForecast("jx/")
-			if err != nil {
-				log.Println(err)
-			}
-			err = mysql.DetectForecast("gd/")
-			if err != nil {
-				log.Println(err)
-			}
-			// 发送统计信息给bot
-			msgGd, err := mysql.StatisticsForecast("gd/")
-			if err != nil {
-				log.Println(err)
-			}
-			msgJx, err := mysql.StatisticsForecast("jx/")
-			if err != nil {
-				log.Println(err)
-			}
-			// 尝试三次
-			for i := 0; i < 3; i++ {
-				err := pushMsgToBot(msgGd + msgJx)
-				if err == nil {
-					time.Sleep(time.Minute) // 如果发送成功, 那就sleep一分钟, 避免重复发送数据
-					break
-				}
-			}
-		}
-	}
+	////每天23:15验证当天的预测
+	//for {
+	//	t0 := time.Now()
+	//	if t0.Hour() == 23 && t0.Minute() == 15 {
+	//		err := mysql.DetectForecast("jx/")
+	//		if err != nil {
+	//			log.Println(err)
+	//		}
+	//		err = mysql.DetectForecast("gd/")
+	//		if err != nil {
+	//			log.Println(err)
+	//		}
+	//		// 发送统计信息给bot
+	//		msgGd, err := mysql.StatisticsForecast("gd/")
+	//		if err != nil {
+	//			log.Println(err)
+	//		}
+	//		msgJx, err := mysql.StatisticsForecast("jx/")
+	//		if err != nil {
+	//			log.Println(err)
+	//		}
+	//		// 尝试三次
+	//		for i := 0; i < 3; i++ {
+	//			err := pushMsgToBot(msgGd + msgJx)
+	//			if err == nil {
+	//				time.Sleep(time.Minute) // 如果发送成功, 那就sleep一分钟, 避免重复发送数据
+	//				break
+	//			}
+	//		}
+	//	}
+	//}
 
 	// 立刻验证当前的猜测
 	//err := mysql.DetectForecast("jx/")

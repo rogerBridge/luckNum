@@ -46,7 +46,8 @@ func InitMysqlConn() *sql.DB {
 }
 
 // conn 设置为全局变量, 方便复用, 初始化失败时, 服务不能启动
-var conn = InitMysqlConn()
+//var conn = InitMysqlConn()
+var conn = new(sql.DB)
 
 func SaveResultToMysqlJx(orderNum string, orderTime string, valueList []int, valueString string) error {
 	if len(valueList) != 12 {

@@ -9,7 +9,7 @@ ENV TZ=Asia/Shanghai
 COPY ./mysqlConfig.json ./
 COPY ./timingGetData ./
 COPY ./lucky ./
-COPY ./botMsg ./
+COPY ./botmsg ./
 COPY runInDocker.sh ./
 
 ENTRYPOINT ["/bin/bash", "runInDocker.sh"]
