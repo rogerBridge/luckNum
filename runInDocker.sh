@@ -2,5 +2,5 @@
 echo "start"
 ./timingGetData &
 ./lucky &
-./botMsg
+./botmsg
 echo "end"
