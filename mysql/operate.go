@@ -549,13 +549,11 @@ func StatisticsForecast(prefix string) (string, error) {
 				return "", err
 			}
 			// 只将forecastResult结果为int的数据存入forecastList
-			fmt.Println()
 			if _, ok := f.ForecastResult.([]uint8); ok {
 				num, _ := strconv.Atoi(string(f.ForecastResult.([]uint8)[0]))
 				forecastList = append(forecastList, ForecastProve{f.OrderNum, f.ForecastNum, num})
 			}
 		}
-		//fmt.Println(prefix, forecastList)
 		// 开始统计, 总猜测次数, 猜错次数, 占比, 猜对次数, 占比, 最大猜错次数
 		return StatisticsForecastList(forecastList, prefix), nil
 	}
