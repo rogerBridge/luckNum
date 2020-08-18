@@ -15,8 +15,8 @@ import (
 	"time"
 )
 
+// 得到最新一期的未出数字和遗漏值, 并且将它们的值写入到forecast表中, 并且通过msgbot发送出来
 func getLuckNum(prefix string) error {
-	// 得到最新的一期的未出数字和遗漏值
 	var baseURL, sCookie string
 	if prefix == "jx/" {
 		baseURL = "https://chart.ydniu.com/trend/syx5jx/"
@@ -83,13 +83,14 @@ func getLuckNum(prefix string) error {
 			numList[i-6] = "N"
 		}
 	}
+	// m为: 数字:遗漏的数值
 	m := make(map[int]int)
 	for i, v := range numList {
 		if v != "N" {
 			m[i+1], _ = strconv.Atoi(v)
 		}
 	}
-	// 更新luck表
+	// 更新luck表 && unluck表
 	showThink(prefix, 0, hopeWin)
 	// 拿到luck表中specific_num, leave_value, stop_probability, hope_income 数值
 	luckNumList, err := mysql.GetDataFromLuckTable(prefix)
@@ -97,7 +98,12 @@ func getLuckNum(prefix string) error {
 		log.Println(err)
 		return err
 	}
-	//fmt.Println(luckNumList)
+	// 拿到unluck表中specific_num, leave_value, stop_probability, hope_income 数值
+	unluckNumList, err := mysql.GetDataFromUnLuckTable(prefix)
+	if err!= nil {
+		log.Println(err)
+		return err
+	}
 	// 看看最新一期里面有没有什么机会?
 	fmt.Println(prefix, "这一期: ", iwant.SelectElement("td").Text())
 	nearestOrderNum := iwant.SelectElement("td").Text()
@@ -106,11 +112,22 @@ func getLuckNum(prefix string) error {
 	for k, v := range m {
 		for _, luckNum := range luckNumList {
 			if k == luckNum.SpecificNum && v == luckNum.LeaveValue {
-				fmt.Printf("可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", luckNum.SpecificNum, luckNum.LeaveValue, luckNum.StopProbability, luckNum.HopeIncome)
+				fmt.Printf("luck可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", luckNum.SpecificNum, luckNum.LeaveValue, luckNum.StopProbability, luckNum.HopeIncome)
 				willOrderLuckNum = append(willOrderLuckNum, luckNum)
 			}
 		}
 	}
+	// 这一期所有符合要求的UnLuckNum都将放入willOrderUnLuckNum
+	var willOrderUnLuckNum []mysql.LuckNum
+	for k, v := range m {
+		for _, unluckNum := range unluckNumList {
+			if k == unluckNum.SpecificNum && v == unluckNum.LeaveValue {
+				fmt.Printf("unluck可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", unluckNum.SpecificNum, unluckNum.LeaveValue, unluckNum.StopProbability, unluckNum.HopeIncome)
+				willOrderUnLuckNum = append(willOrderUnLuckNum, unluckNum)
+			}
+		}
+	}
+	// 如果最新一期有符合luck表要求的数值, 将它们中hopeIncome数值最大的那个添加进forecast表格中
 	if len(willOrderLuckNum) > 0 {
 		// 从willOrderLuckNum中找到数学期望最大的那个luckNum, 并将它写入到forecast_{jx/gd}表格中
 		vWant := willOrderLuckNum[0]
@@ -133,16 +150,105 @@ func getLuckNum(prefix string) error {
 		//	return err
 		//}
 
+		// 首先, 将预测的结果存放到forecast表格中
 		err = mysql.StoreResultToForecastTable(prefix, forecastOrderNum, vWant.SpecificNum)
 		if err != nil {
 			log.Println(err)
+			return err
+		}
+		// 从原始数据表格中找到是否符合
+		err = mysql.DetectForecast(prefix)
+		if err != nil {
+			// 这里有错误不可以直接return err, 如果这样, 新的预测数据就发不出去了
+			// 比如: 你预测了一个数字, 然后在统计数据中找不到对应的值, (这种情况很常见), 那你的预测数据发不出去了
+			log.Println("DetectForecast: ", err)
+			//return err
+		}
+		msg, err := mysql.StatisticsForecast(prefix)
+		if err != nil {
+			log.Println("StatisticsForecast: ", err)
+			return err
+		}
+		// 尝试三次, 将消息发送出去
+		go sendMsgThreeTimes(msg, prefix, forecastOrderNum, vWant)
+		//return errors.New("send msg fail")
+	} else {
+		err := mysql.DetectForecast(prefix)
+		if err != nil {
+			log.Println("没有预测数值时, DetectForecast: ", err)
+			return err
+		}
+	}
+
+	// 如果最新一期有符合unluck表要求的数值, 将它们中hopeIncome数值最小的那个添加进forecast表格中
+	if len(willOrderUnLuckNum) > 0 {
+		// 从willOrderLuckNum中找到数学期望最小的那个luckNum, 并将它写入到forecast_{jx/gd}表格中
+		vWant := willOrderUnLuckNum[0]
+		for _, v := range willOrderUnLuckNum {
+			if v.HopeIncome < vWant.HopeIncome {
+				vWant = v
+			}
+		}
+		// 将预测的数学期望最低的unluckNum写入forecast_{jx/gd}中
+		forecastOrderNum, err := nextOne(nearestOrderNum)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		// PushMsg(fmt.Sprintf("%s:forecast:%s 可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", prefix, forecastOrderNum, vWant.SpecificNum, vWant.LeaveValue, vWant.StopProbability, vWant.HopeIncome))
+		// 停止推送消息到 Bot
+		//err = pushMsgToBot(fmt.Sprintf("%s:forecast:%s 可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", prefix, forecastOrderNum, vWant.SpecificNum, vWant.LeaveValue, vWant.StopProbability, vWant.HopeIncome))
+		//if err!=nil {
+		//	log.Println(err)
+		//	return err
+		//}
+
+		// 首先, 将预测的结果存放到forecast表格中
+		err = mysql.StoreResultToForecast2Table(prefix, forecastOrderNum, vWant.SpecificNum)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		// 从原始数据表格中确认是否符合
+		err = mysql.DetectForecast2(prefix)
+		if err != nil {
+			// 这里有错误不可以直接return err, 如果这样, 新的预测数据就发不出去了
+			// 比如: 你预测了一个数字, 然后在统计数据中找不到对应的值, (这种情况很常见), 那你的预测数据发不出去了
+			log.Println("DetectForecast2: ", err)
+			//return err
+		}
+		_, err = mysql.StatisticsForecast2(prefix)
+		if err != nil {
+			log.Println("StatisticsForecast: ", err)
+			return err
+		}
+		// 尝试三次, 将消息发送出去
+		// 最坏运气时, 暂时不要发消息
+		//go sendMsgThreeTimes(msg, prefix, forecastOrderNum, vWant)
+		//return errors.New("send msg fail")
+	} else {
+		err := mysql.DetectForecast2(prefix)
+		if err != nil {
+			log.Println("没有预测数值时, DetectForecast2: ", err)
 			return err
 		}
 	}
 	return nil
 }
 
-// 生成下一期orderNum
+// 发送msg三次, 最好使用goroutine, 防止发送端出现延迟影响 main goroutine
+func sendMsgThreeTimes(msg string, prefix string, forecastOrderNum string, vWant mysql.LuckNum) {
+	for i := 0; i < 3; i++ {
+		err := pushMsgToBot(msg + fmt.Sprintf("%s %s %d", prefix, forecastOrderNum, vWant.SpecificNum))
+		if err == nil {
+			return
+		}else {
+			log.Printf("send msg fail No.%d\n", i)
+		}
+	}
+}
+
+// 根据输入的orderNum生成下一期orderNum
 func nextOne(thisOne string) (string, error) {
 	if len(thisOne) != 10 {
 		return "", errors.New("error length")

@@ -23,8 +23,18 @@ import (
 )
 
 var hopeWin = 1.02
+var gdWinOnce = 2.134
+var jxWinOnce = 2.156
 
 func main() {
+	// 测试区域
+	////mysql.StatisticsForecast("gd/")
+	//msgGd, err := mysql.StatisticsForecast("jx/")
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//fmt.Println(msgGd)
+
 	////立即更新不含今天数据的所有数据到mysql中
 	//dateList := constructDate()
 	//dateRangeLength := len(dateList) - 1 // 不包含今天
@@ -37,53 +47,88 @@ func main() {
 	//// 每隔1min 更新最新数据
 	//timingGetData()
 
-	//// every 10 mins, 筛选符合要求的数学期望 lucky
-	//for ;; {
-	//	t0 := time.Now()
-	//	if t0.Hour() > 8 && t0.Hour() < 24 {
-	//		err := getLuckNum("gd/")
-	//		if err!=nil {
-	//			log.Printf("%+v\n", err)
-	//		}
-	//		err = getLuckNum("jx/")
-	//		if err!=nil {
-	//			log.Printf("%+v\n", err)
-	//		}
-	//	}
-	//	time.Sleep(10*time.Minute)
-	//}
-
-	//每天23:15 || 11:15拿到匹配结果
+	//every 10 mins, 筛选符合要求的数学期望 lucky
+	log.Println("start lucky ...")
 	for {
 		t0 := time.Now()
-		if (t0.Hour() == 23 || t0.Hour() == 11) && t0.Minute() == 15 {
-			err := mysql.DetectForecast("jx/")
+		todayZero := time.Date(t0.Year(), t0.Month(), t0.Day(), 0, 0, 0, 0, time.Local)
+		// 每天特定时间范围内执行
+		if t0.After(todayZero.Add(time.Minute*(9*60))) && t0.Before(todayZero.Add(time.Minute*(23*60+30))) {
+			//go getLuckNum("gd/")
+			//go getLuckNum("jx/")
+			err := getLuckNum("gd/")
 			if err != nil {
-				log.Println(err)
+				log.Printf("%+v\n", err)
 			}
-			err = mysql.DetectForecast("gd/")
+			err = getLuckNum("jx/")
 			if err != nil {
-				log.Println(err)
-			}
-			// 发送统计信息给bot
-			msgGd, err := mysql.StatisticsForecast("gd/")
-			if err != nil {
-				log.Println(err)
-			}
-			msgJx, err := mysql.StatisticsForecast("jx/")
-			if err != nil {
-				log.Println(err)
-			}
-			// 尝试三次
-			for i := 0; i < 3; i++ {
-				err := pushMsgToBot(msgGd + msgJx)
-				if err == nil {
-					time.Sleep(time.Minute) // 如果发送成功, 那就sleep一分钟, 避免重复发送数据
-					break
-				}
+				log.Printf("%+v\n", err)
 			}
 		}
+		// 只阻断 main goroutine, 不阻断其他goroutine的运行
+		timer := time.NewTimer(10*time.Minute)
+		<-timer.C
+		//time.Sleep(10 * time.Minute)
 	}
+
+	//// 立刻发送探测后的信息给msgbot
+	//err := mysql.DetectForecast("jx/")
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//err = mysql.DetectForecast("gd/")
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//// 发送统计信息给bot
+	//msgGd, err := mysql.StatisticsForecast("gd/")
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//msgJx, err := mysql.StatisticsForecast("jx/")
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//// 尝试三次
+	//for i := 0; i < 3; i++ {
+	//	err := pushMsgToBot(msgGd + msgJx)
+	//	if err == nil {
+	//		time.Sleep(time.Minute) // 如果发送成功, 那就sleep一分钟, 避免重复发送数据
+	//		break
+	//	}
+	//}
+
+	//// 每天23:15 || 11:15拿到匹配结果
+	//for {
+	//	t0 := time.Now()
+	//	if (t0.Hour() == 23 || t0.Hour() == 11) && t0.Minute() == 15 {
+	//		err := mysql.DetectForecast("jx/")
+	//		if err != nil {
+	//			log.Println(err)
+	//		}
+	//		err = mysql.DetectForecast("gd/")
+	//		if err != nil {
+	//			log.Println(err)
+	//		}
+	//		// 发送统计信息给bot
+	//		msgGd, err := mysql.StatisticsForecast("gd/")
+	//		if err != nil {
+	//			log.Println(err)
+	//		}
+	//		msgJx, err := mysql.StatisticsForecast("jx/")
+	//		if err != nil {
+	//			log.Println(err)
+	//		}
+	//		// 尝试三次
+	//		for i := 0; i < 3; i++ {
+	//			err := pushMsgToBot(msgGd + msgJx)
+	//			if err == nil {
+	//				time.Sleep(time.Minute) // 如果发送成功, 那就sleep一分钟, 避免重复发送数据
+	//				break
+	//			}
+	//		}
+	//	}
+	//}
 
 	// 立刻验证当前的猜测
 	//err := mysql.DetectForecast("jx/")
@@ -94,6 +139,7 @@ func main() {
 	//if err != nil {
 	//	log.Println(err)
 	//}
+
 	//// 发送统计信息给bot
 	//msgGd, err := mysql.StatisticsForecast("gd/")
 	//if err!=nil {
@@ -111,9 +157,12 @@ func main() {
 
 // 定时获取最新数据
 func timingGetData() {
+	log.Println("start timingGetData ...")
 	for {
-		now := time.Now()
-		if now.Hour() > 8 && now.Hour() <= 23 {
+		t0 := time.Now()
+		todayZero := time.Date(t0.Year(), t0.Month(), t0.Day(), 0, 0, 0, 0, time.Local)
+		// 每天特定时间范围内执行
+		if t0.After(todayZero.Add(time.Minute*(9*60))) && t0.Before(todayZero.Add(time.Minute*(23*60+30))) {
 			prefix1 := "gd/"
 			// 更新最新数据
 			err := getNewestData(prefix1)
@@ -127,7 +176,7 @@ func timingGetData() {
 				log.Println(err)
 			}
 		}
-		time.Sleep(60 * time.Second)
+		time.Sleep(time.Minute)
 	}
 }
 
@@ -659,8 +708,9 @@ func showDiffInRange(timeRange []string, queryData []mysql.QueryData, specificNu
 	return m
 }
 
-// 展示思考后的结果, flag为: "jx/" || "gd/"
+// 展示思考后的结果, flag为: "jx/" || "gd/", 并且将思考后的结果写入: ["gd", "jx"]_luck表中
 // limit 最近多少期
+// 展示思考后的结果, flag为: "jx/" || "gd/", 并且将思考后的结果写入: ["gd", "jx"]_unluck表中
 func showThink(flag string, limit int, hopeWin float64) {
 	if flag == "gd/" {
 		//fmt.Println("开始评估gd近", limit, "期...")
@@ -675,6 +725,7 @@ func showThink(flag string, limit int, hopeWin float64) {
 		// 统计每个数字出现的概率
 		ariseTimesMap := make(map[int]float64)
 		for i := 1; i < 12; i++ {
+			// ariseTimesMap, 天才的想法呀, 因为map是指针型的, 所以函数内部对它的修改也会反映到外部
 			countTimesArise(data, i, ariseTimesMap)
 		}
 		//log.Println(ariseTimesMap)
@@ -692,7 +743,15 @@ func showThink(flag string, limit int, hopeWin float64) {
 			log.Printf("清除luck %s 失败\n", flag)
 			return
 		}
+		// 每次向unluck表中遍历添加数值时, 先清除unluck表中的全部内容
+		err = mysql.DeleteUnLuckTable(flag)
+		if err != nil {
+			log.Printf("清除unluck %s 失败\n", flag)
+			return
+		}
+		// 从数字 1 to 11, 将每个数字的遗漏比例统计一下
 		for q := 1; q < 12; q++ {
+			// 将 某一个特定数字的遗漏数字和遗漏期数拿出来, 并且将遗漏数字排序
 			r := calSpecificNumTimes(data, q)
 			keyList := make([]int, 0)
 			for k, _ := range r {
@@ -704,16 +763,28 @@ func showThink(flag string, limit int, hopeWin float64) {
 				if keyList[i] >= 0 {
 					count := 0
 					for k, v := range r {
+						// 这个遗漏值到了之后没有停止
 						if k >= keyList[i] {
 							count += len(v)
 						}
 					}
-					if 2.156*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])) > hopeWin {
+					// 这个数到了之后就停止/这个数到了之后没有停止 的 比值
+					if gdWinOnce*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])) > hopeWin {
 						//fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
 						// 将数学期望大于hopeWin的数值写入数据库
-						err := mysql.Write2Luck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q]), 2.156*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])))
+						err := mysql.Write2Luck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q]), gdWinOnce*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])))
 						if err != nil {
 							log.Printf("write to mysql_luck error\n")
+							return
+						}
+					}
+					// 将低于预期的数值写入unluck表格中
+					if ((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])) < 5.0/11.0 {
+						//fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
+						// 将数学期望大于hopeWin的数值写入数据库
+						err := mysql.Write2UnLuck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q]), gdWinOnce*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])))
+						if err != nil {
+							log.Printf("write to mysql_unluck error\n")
 							return
 						}
 					}
@@ -752,6 +823,12 @@ func showThink(flag string, limit int, hopeWin float64) {
 			log.Printf("清除luck %s 失败\n", flag)
 			return
 		}
+		err = mysql.DeleteUnLuckTable(flag)
+		if err!=nil {
+			log.Printf("清除unluck %s 失败\n", flag)
+			return
+		}
+
 		for q := 1; q < 12; q++ {
 			r := calSpecificNumTimes(data, q)
 			keyList := make([]int, 0)
@@ -768,12 +845,21 @@ func showThink(flag string, limit int, hopeWin float64) {
 							count += len(v)
 						}
 					}
-					if 2.156*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])) > hopeWin {
+					if jxWinOnce*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])) > hopeWin {
 						//fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
 						// 将数学期望大于hopeWin的数值写入数据库
-						err := mysql.Write2Luck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q]), 2.156*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])))
+						err := mysql.Write2Luck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q]), jxWinOnce*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])))
 						if err != nil {
 							log.Printf("write to mysql_luck error\n")
+							return
+						}
+					}
+					if ((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])) < 5.0/11.0 {
+						//fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
+						// 将数学期望大于hopeWin的数值写入数据库
+						err := mysql.Write2UnLuck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q]), jxWinOnce*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])))
+						if err != nil {
+							log.Printf("write to mysql_unluck error\n")
 							return
 						}
 					}
@@ -1066,11 +1152,11 @@ func calLeaveAndTimes(m map[int][]string, specificNum int) {
 	fmt.Println("数字", specificNum, "遗漏的最大数字是: ", keyList[len(keyList)-1], "遗漏的期数是: ", m[keyList[len(keyList)-1]], "对应的时间是: ", result)
 }
 
-// 计算某个数字在queryList中遗漏的最大次数以及对应的orderNum
+// 计算某个数字在queryList中遗漏的每个次数以及对应的orderNum
 func calSpecificNumTimes(queryList []mysql.QueryData, specificNum int) map[int][]string {
 	count := 0
 	countMap := make(map[int][]string, 0)
-	// 计算数字1
+	// 计算数字 specificNum
 	switch specificNum {
 	case 1:
 		for i := 0; i < len(queryList); i++ {

@@ -1,7 +1,7 @@
 {
   "username": "root",
   "password": "b486fe24-406f-4985-b691-5f8482e1dc96",
-  "ipAddress": "playlotterymysql",
-  "port": "3306",
+  "ipAddress": "127.0.0.1",
+  "port": "3300",
   "database": "db_play"
 }
