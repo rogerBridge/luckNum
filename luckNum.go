@@ -9,6 +9,7 @@ import (
 	"go11x5/mysql"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -90,9 +91,11 @@ func getLuckNum(prefix string) error {
 			m[i+1], _ = strconv.Atoi(v)
 		}
 	}
+
 	// 更新luck表 && unluck表
 	showThink(prefix, 0, hopeWin)
 	// 拿到luck表中specific_num, leave_value, stop_probability, hope_income 数值
+
 	luckNumList, err := mysql.GetDataFromLuckTable(prefix)
 	if err != nil {
 		log.Println(err)
@@ -169,8 +172,10 @@ func getLuckNum(prefix string) error {
 			log.Println("StatisticsForecast: ", err)
 			return err
 		}
+		message := msg + fmt.Sprintf("%s %s %d", prefix, forecastOrderNum, vWant.SpecificNum)
 		// 尝试三次, 将消息发送出去
-		go sendMsgThreeTimes(msg, prefix, forecastOrderNum, vWant)
+		log.Println("luck: \n" + message)
+		//go sendMsgThreeTimes("luck: \n" + message)
 		//return errors.New("send msg fail")
 	} else {
 		err := mysql.DetectForecast(prefix)
@@ -180,12 +185,14 @@ func getLuckNum(prefix string) error {
 		}
 	}
 
+
 	// 如果最新一期有符合unluck表要求的数值, 将它们中hopeIncome数值最小的那个添加进forecast表格中
 	if len(willOrderUnLuckNum) > 0 {
 		// 从willOrderLuckNum中找到数学期望最小的那个luckNum, 并将它写入到forecast_{jx/gd}表格中
+		// 选出与5.0/11.0最接近的猜想数值
 		vWant := willOrderUnLuckNum[0]
 		for _, v := range willOrderUnLuckNum {
-			if v.HopeIncome < vWant.HopeIncome {
+			if math.Abs(v.StopProbability-5.0/11.0) < math.Abs(vWant.StopProbability-5.0/11.0) {
 				vWant = v
 			}
 		}
@@ -217,14 +224,14 @@ func getLuckNum(prefix string) error {
 			log.Println("DetectForecast2: ", err)
 			//return err
 		}
-		_, err = mysql.StatisticsForecast2(prefix)
+		msg, err := mysql.StatisticsForecast2(prefix)
 		if err != nil {
 			log.Println("StatisticsForecast: ", err)
 			return err
 		}
+		message := msg + fmt.Sprintf("%s %s %d", prefix, forecastOrderNum, vWant.SpecificNum)
 		// 尝试三次, 将消息发送出去
-		// 最坏运气时, 暂时不要发消息
-		//go sendMsgThreeTimes(msg, prefix, forecastOrderNum, vWant)
+		go sendMsgThreeTimes("unluck: \n" + message)
 		//return errors.New("send msg fail")
 	} else {
 		err := mysql.DetectForecast2(prefix)
@@ -237,9 +244,9 @@ func getLuckNum(prefix string) error {
 }
 
 // 发送msg三次, 最好使用goroutine, 防止发送端出现延迟影响 main goroutine
-func sendMsgThreeTimes(msg string, prefix string, forecastOrderNum string, vWant mysql.LuckNum) {
+func sendMsgThreeTimes(msg string) {
 	for i := 0; i < 3; i++ {
-		err := pushMsgToBot(msg + fmt.Sprintf("%s %s %d", prefix, forecastOrderNum, vWant.SpecificNum))
+		err := pushMsgToBot(msg)
 		if err == nil {
 			return
 		}else {

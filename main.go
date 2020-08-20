@@ -66,7 +66,7 @@ func main() {
 			}
 		}
 		// 只阻断 main goroutine, 不阻断其他goroutine的运行
-		timer := time.NewTimer(10*time.Minute)
+		timer := time.NewTimer(10 * time.Minute)
 		<-timer.C
 		//time.Sleep(10 * time.Minute)
 	}
@@ -769,7 +769,7 @@ func showThink(flag string, limit int, hopeWin float64) {
 						}
 					}
 					// 这个数到了之后就停止/这个数到了之后没有停止 的 比值
-					if gdWinOnce*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])) > hopeWin {
+					if gdWinOnce*((float64(len(r[keyList[i]]))/float64(count))*(1-ariseTimesMap[q])) > hopeWin {
 						//fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
 						// 将数学期望大于hopeWin的数值写入数据库
 						err := mysql.Write2Luck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q]), gdWinOnce*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])))
@@ -778,8 +778,9 @@ func showThink(flag string, limit int, hopeWin float64) {
 							return
 						}
 					}
+
 					// 将低于预期的数值写入unluck表格中
-					if ((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])) < 5.0/11.0 {
+					if (float64(len(r[keyList[i]]))/float64(count)) * (1-ariseTimesMap[q]) < 5.0 / 11.0 {
 						//fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
 						// 将数学期望大于hopeWin的数值写入数据库
 						err := mysql.Write2UnLuck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q]), gdWinOnce*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])))
@@ -824,7 +825,7 @@ func showThink(flag string, limit int, hopeWin float64) {
 			return
 		}
 		err = mysql.DeleteUnLuckTable(flag)
-		if err!=nil {
+		if err != nil {
 			log.Printf("清除unluck %s 失败\n", flag)
 			return
 		}
@@ -845,7 +846,7 @@ func showThink(flag string, limit int, hopeWin float64) {
 							count += len(v)
 						}
 					}
-					if jxWinOnce*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])) > hopeWin {
+					if jxWinOnce*((float64(len(r[keyList[i]]))/float64(count))*(1-ariseTimesMap[q])) > hopeWin {
 						//fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
 						// 将数学期望大于hopeWin的数值写入数据库
 						err := mysql.Write2Luck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q]), jxWinOnce*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])))
@@ -854,7 +855,7 @@ func showThink(flag string, limit int, hopeWin float64) {
 							return
 						}
 					}
-					if ((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])) < 5.0/11.0 {
+					if (float64(len(r[keyList[i]])) / float64(count)) * (1 - ariseTimesMap[q]) < (5.0 / 11.0) {
 						//fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
 						// 将数学期望大于hopeWin的数值写入数据库
 						err := mysql.Write2UnLuck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q]), jxWinOnce*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])))
