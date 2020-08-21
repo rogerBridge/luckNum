@@ -813,6 +813,7 @@ func StatisticsForecast2(prefix string) (string, error) {
 	}
 	return "", errors.New("不受支持的prefix类型")
 }
+
 // 统计整理statistics表格里面的各种数据
 func StatisticsForecast(prefix string) (string, error) {
 	var forecastList []ForecastProve

@@ -93,7 +93,7 @@ func getLuckNum(prefix string) error {
 	}
 
 	// 更新luck表 && unluck表
-	showThink(prefix, 0, hopeWin)
+	showThink(prefix, 0)
 	// 拿到luck表中specific_num, leave_value, stop_probability, hope_income 数值
 
 	luckNumList, err := mysql.GetDataFromLuckTable(prefix)

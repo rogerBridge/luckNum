@@ -8,8 +8,8 @@ ENV TZ=Asia/Shanghai
 # all thing copy to WORKDIR
 COPY ./mysqlConfig.json ./
 COPY ./timingGetData ./
-COPY ./lucky ./
-COPY ./botmsg ./
-COPY runInDocker.sh ./
+COPY ./luckyGd ./
+COPY ./luckyJx ./
+COPY ./runInDocker.sh ./
 
 ENTRYPOINT ["/bin/bash", "runInDocker.sh"]

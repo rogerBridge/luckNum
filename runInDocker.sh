@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "start"
 ./timingGetData &
-./lucky &
-./botmsg
+./luckyGd &
+./luckyJx
 echo "end"
