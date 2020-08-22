@@ -500,10 +500,10 @@ func DetectForecast2(prefix string) error {
 			detectList = append(detectList, d)
 		}
 		// forecast表格中遗漏的数值, 这里只验证最近的 个
-		if len(detectList) < 2 {
+		if len(detectList) < 11 {
 			return errors.New("forecast2_gd表里面数据不足, 无法验证")
 		}
-		detectList = detectList[len(detectList)-2:]
+		detectList = detectList[len(detectList)-11:]
 		// 拿到detectList之后, 把真实的值写入到forecast表里
 		for _, v := range detectList {
 			var isTrue int
@@ -539,11 +539,11 @@ func DetectForecast2(prefix string) error {
 			}
 			detectList = append(detectList, d)
 		}
-		if len(detectList) < 2 {
+		if len(detectList) < 11 {
 			return errors.New("forecast2_jx表里面数据不足, 无法验证")
 		}
 		// 比对forecast表格中最近 条数据
-		detectList = detectList[len(detectList)-2:]
+		detectList = detectList[len(detectList)-11:]
 		// 拿到detectList之后, 把真实的值写入到forecast表里
 		for _, v := range detectList {
 			var isTrue int

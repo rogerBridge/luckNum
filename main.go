@@ -22,11 +22,11 @@ import (
 	"time"
 )
 
-var gdLuck = 1.01/gdWinOnce
-var jxLuck = 1.01/jxWinOnce
+var gdLuck = 1.01 / gdWinOnce
+var jxLuck = 1.01 / jxWinOnce
 var gdWinOnce = 2.134
-var gdUnluck = (5.0/11.0)*0.99
-var jxUnluck = (5.0/11.0)*0.99
+var gdUnluck = (5.0 / 11.0) * 0.99
+var jxUnluck = (5.0 / 11.0) * 0.99
 var jxWinOnce = 2.156
 
 func main() {
@@ -47,41 +47,78 @@ func main() {
 	//	time.Sleep(time.Second)
 	//}
 
-	//// 每隔1min 更新最新数据
+	// 每隔1min 更新最新数据
 	//timingGetData()
 
 	////every 10 mins, 筛选符合要求的数学期望 lucky
+	//for {
+	//	t0 := time.Now()
+	//	t0minute := t0.Minute()
+	//	t0second := t0.Second()
+	//	if t0minute%10 == 3 && t0second == 20 {
+	//		log.Println("设定开启的时分到!")
+	//		break
+	//	}
+	//	timer := time.NewTimer(time.Second)
+	//	<-timer.C
+	//}
+	//
+	//f, err := os.OpenFile("luckyGd.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	//if err != nil {
+	//	log.Fatalf("error opening file: %v", err)
+	//}
+	//defer f.Close()
+	//log.SetOutput(f)
+	//
 	//log.Println("start luckyGd ...")
 	//for {
 	//	t0 := time.Now()
 	//	todayZero := time.Date(t0.Year(), t0.Month(), t0.Day(), 0, 0, 0, 0, time.Local)
 	//	// 每天特定时间范围内执行
-	//	if t0.After(todayZero.Add(time.Minute*(9*60))) && t0.Before(todayZero.Add(time.Minute*(23*60+30))) {
+	//	if t0.After(todayZero.Add(time.Minute*(9*60))) && t0.Before(todayZero.Add(time.Minute*(23*60+30))) && (t0.Minute()%10==3 && t0.Second()==20) {
 	//		err := getLuckNum("gd/")
 	//		if err != nil {
 	//			log.Printf("%+v\n", err)
 	//		}
 	//	}
 	//	// 只阻断 main goroutine, 不阻断其他goroutine的运行
-	//	timer := time.NewTimer(10 * time.Minute)
+	//	timer := time.NewTimer(time.Second)
 	//	<-timer.C
 	//	//time.Sleep(10 * time.Minute)
 	//}
 
 	//every 10 mins, 筛选符合要求的数学期望 lucky
+	for {
+		t0 := time.Now()
+		t0minute := t0.Minute()
+		t0second := t0.Second()
+		if t0minute%10 == 3 && t0second == 21 {
+			log.Println("设定开启的时分到!")
+			break
+		}
+		timer := time.NewTimer(time.Second)
+		<-timer.C
+	}
+	f, err := os.OpenFile("luckyJx.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer f.Close()
+	log.SetOutput(f)
+
 	log.Println("start luckyJx ...")
 	for {
 		t0 := time.Now()
 		todayZero := time.Date(t0.Year(), t0.Month(), t0.Day(), 0, 0, 0, 0, time.Local)
 		// 每天特定时间范围内执行
-		if t0.After(todayZero.Add(time.Minute*(9*60))) && t0.Before(todayZero.Add(time.Minute*(23*60+30))) {
+		if t0.After(todayZero.Add(time.Minute*(9*60))) && t0.Before(todayZero.Add(time.Minute*(23*60+30))) && (t0.Minute()%10 == 3 && t0.Second() == 21) {
 			err := getLuckNum("jx/")
 			if err != nil {
 				log.Printf("%+v\n", err)
 			}
 		}
 		// 只阻断 main goroutine, 不阻断其他goroutine的运行
-		timer := time.NewTimer(10 * time.Minute)
+		timer := time.NewTimer(time.Second)
 		<-timer.C
 		//time.Sleep(10 * time.Minute)
 	}
@@ -190,20 +227,12 @@ func timingGetData() {
 		todayZero := time.Date(t0.Year(), t0.Month(), t0.Day(), 0, 0, 0, 0, time.Local)
 		// 每天特定时间范围内执行
 		if t0.After(todayZero.Add(time.Minute*(9*60))) && t0.Before(todayZero.Add(time.Minute*(23*60+30))) {
-			prefix1 := "gd/"
 			// 更新最新数据
-			err := getNewestData(prefix1)
-			if err != nil {
-				log.Println(err)
-			}
-
-			prefix2 := "jx/"
-			err = getNewestData(prefix2)
-			if err != nil {
-				log.Println(err)
-			}
+			go getNewestData("gd/")
+			go getNewestData("jx/")
 		}
-		time.Sleep(time.Minute)
+		timer := time.NewTimer(time.Minute)
+		<-timer.C
 	}
 }
 
@@ -807,7 +836,7 @@ func showThink(flag string, limit int) {
 					}
 
 					// 将低于预期的数值写入unluck表格中
-					if (float64(len(r[keyList[i]]))/float64(count)) * (1-ariseTimesMap[q]) < gdUnluck {
+					if (float64(len(r[keyList[i]]))/float64(count))*(1-ariseTimesMap[q]) < gdUnluck {
 						//fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
 						// 将数学期望大于hopeWin的数值写入数据库
 						err := mysql.Write2UnLuck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q]), gdWinOnce*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])))
@@ -882,7 +911,7 @@ func showThink(flag string, limit int) {
 							return
 						}
 					}
-					if (float64(len(r[keyList[i]])) / float64(count)) * (1 - ariseTimesMap[q]) < jxUnluck {
+					if (float64(len(r[keyList[i]]))/float64(count))*(1-ariseTimesMap[q]) < jxUnluck {
 						//fmt.Printf("遗漏值: %d, 遗漏期数: %d, 就此终止几率: %.4f, 期望收益: %.4f\n", keyList[i], len(r[keyList[i]]), float64(len(r[keyList[i]]))/float64(count), 2.156*float64(len(r[keyList[i]]))/float64(count))
 						// 将数学期望大于hopeWin的数值写入数据库
 						err := mysql.Write2UnLuck(flag, q, keyList[i], (float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q]), jxWinOnce*((float64(len(r[keyList[i]]))/float64(count))/(1+ariseTimesMap[q])))
@@ -1058,8 +1087,8 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 				ariseTimes += 1
 			}
 		}
-		fmt.Printf("数字%d", specificNum)
-		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
+		log.Printf("数字%d", specificNum)
+		log.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
 		ariseTimesMap[1] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 	case 2:
 		for i := 0; i < allTimes; i++ {
@@ -1067,8 +1096,8 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 				ariseTimes += 1
 			}
 		}
-		fmt.Printf("数字%d", specificNum)
-		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
+		log.Printf("数字%d", specificNum)
+		log.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
 		ariseTimesMap[2] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 	case 3:
 		for i := 0; i < allTimes; i++ {
@@ -1076,8 +1105,8 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 				ariseTimes += 1
 			}
 		}
-		fmt.Printf("数字%d", specificNum)
-		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
+		log.Printf("数字%d", specificNum)
+		log.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
 		ariseTimesMap[3] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 	case 4:
 		for i := 0; i < allTimes; i++ {
@@ -1085,8 +1114,8 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 				ariseTimes += 1
 			}
 		}
-		fmt.Printf("数字%d", specificNum)
-		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
+		log.Printf("数字%d", specificNum)
+		log.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
 		ariseTimesMap[4] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 
 	case 5:
@@ -1095,8 +1124,8 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 				ariseTimes += 1
 			}
 		}
-		fmt.Printf("数字%d", specificNum)
-		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
+		log.Printf("数字%d", specificNum)
+		log.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
 		ariseTimesMap[5] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 
 	case 6:
@@ -1105,8 +1134,8 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 				ariseTimes += 1
 			}
 		}
-		fmt.Printf("数字%d", specificNum)
-		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
+		log.Printf("数字%d", specificNum)
+		log.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
 		ariseTimesMap[6] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 
 	case 7:
@@ -1115,8 +1144,8 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 				ariseTimes += 1
 			}
 		}
-		fmt.Printf("数字%d", specificNum)
-		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
+		log.Printf("数字%d", specificNum)
+		log.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
 		ariseTimesMap[7] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 
 	case 8:
@@ -1125,8 +1154,8 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 				ariseTimes += 1
 			}
 		}
-		fmt.Printf("数字%d", specificNum)
-		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
+		log.Printf("数字%d", specificNum)
+		log.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
 		ariseTimesMap[8] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 
 	case 9:
@@ -1135,8 +1164,8 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 				ariseTimes += 1
 			}
 		}
-		fmt.Printf("数字%d", specificNum)
-		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
+		log.Printf("数字%d", specificNum)
+		log.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
 		ariseTimesMap[9] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 
 	case 10:
@@ -1145,8 +1174,8 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 				ariseTimes += 1
 			}
 		}
-		fmt.Printf("数字%d", specificNum)
-		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
+		log.Printf("数字%d", specificNum)
+		log.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
 		ariseTimesMap[10] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 
 	case 11:
@@ -1155,8 +1184,8 @@ func countTimesArise(queryData []mysql.QueryData, specificNum int, ariseTimesMap
 				ariseTimes += 1
 			}
 		}
-		fmt.Printf("数字%d", specificNum)
-		fmt.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
+		log.Printf("数字%d", specificNum)
+		log.Printf("出现次数: %d, 占比: %.4f, 未出现次数: %d, 占比: %.4f, 总次数: %d, 与理论值偏差: %.4f%%\n", ariseTimes, float64(ariseTimes)/float64(allTimes), allTimes-ariseTimes, float64(allTimes-ariseTimes)/float64(allTimes), allTimes, (float64(ariseTimes)/float64(allTimes)-5.0/11.0)*100/(5.0/11.0))
 		ariseTimesMap[11] = (float64(ariseTimes)/float64(allTimes) - 5.0/11.0) / (5.0 / 11.0)
 
 	default:

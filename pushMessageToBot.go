@@ -24,11 +24,11 @@ func pushMsgToBot(msg string) error {
 	log.Println("Encrypted data is:", encBytes)
 	// 将加密后的请求发送给自由节点
 	req, err := http.NewRequest(http.MethodPost, host+":8000/tg?method=sendMessage", bytes.NewBuffer(encBytes))
-	req.Header.Add("Authorization", "c371b934-b18c-4a44-a4a9-4d830fd0a527")
 	if err!=nil {
 		log.Println(err)
 		return err
 	}
+	req.Header.Add("Authorization", "c371b934-b18c-4a44-a4a9-4d830fd0a527")
 	resp, err := c.Do(req)
 	if err!=nil {
 		log.Println(err)
@@ -37,6 +37,7 @@ func pushMsgToBot(msg string) error {
 	if resp.Header.Get("Complete") == "true" {
 		return nil
 	}else {
-		return errors.New("unknown error")
+		log.Println("resp header: ", resp.Header)
+		return errors.New("send msg fail")
 	}
 }

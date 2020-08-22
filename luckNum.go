@@ -9,7 +9,6 @@ import (
 	"go11x5/mysql"
 	"io/ioutil"
 	"log"
-	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -108,14 +107,14 @@ func getLuckNum(prefix string) error {
 		return err
 	}
 	// 看看最新一期里面有没有什么机会?
-	fmt.Println(prefix, "这一期: ", iwant.SelectElement("td").Text())
+	log.Println(prefix, "这一期: ", iwant.SelectElement("td").Text())
 	nearestOrderNum := iwant.SelectElement("td").Text()
 	// 这一期所有符合要求的LuckNum都将放入willOrderLuckNum
 	var willOrderLuckNum []mysql.LuckNum
 	for k, v := range m {
 		for _, luckNum := range luckNumList {
 			if k == luckNum.SpecificNum && v == luckNum.LeaveValue {
-				fmt.Printf("luck可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", luckNum.SpecificNum, luckNum.LeaveValue, luckNum.StopProbability, luckNum.HopeIncome)
+				log.Printf("luck可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", luckNum.SpecificNum, luckNum.LeaveValue, luckNum.StopProbability, luckNum.HopeIncome)
 				willOrderLuckNum = append(willOrderLuckNum, luckNum)
 			}
 		}
@@ -125,7 +124,7 @@ func getLuckNum(prefix string) error {
 	for k, v := range m {
 		for _, unluckNum := range unluckNumList {
 			if k == unluckNum.SpecificNum && v == unluckNum.LeaveValue {
-				fmt.Printf("unluck可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", unluckNum.SpecificNum, unluckNum.LeaveValue, unluckNum.StopProbability, unluckNum.HopeIncome)
+				log.Printf("unluck可选数字: %d, 遗漏数值: %d, 停止概率: %.6f, 数学期望: %.6f\n", unluckNum.SpecificNum, unluckNum.LeaveValue, unluckNum.StopProbability, unluckNum.HopeIncome)
 				willOrderUnLuckNum = append(willOrderUnLuckNum, unluckNum)
 			}
 		}
@@ -190,12 +189,14 @@ func getLuckNum(prefix string) error {
 	if len(willOrderUnLuckNum) > 0 {
 		// 从willOrderLuckNum中找到数学期望最小的那个luckNum, 并将它写入到forecast_{jx/gd}表格中
 		// 选出与5.0/11.0最接近的猜想数值
-		vWant := willOrderUnLuckNum[0]
-		for _, v := range willOrderUnLuckNum {
-			if math.Abs(v.StopProbability-5.0/11.0) < math.Abs(vWant.StopProbability-5.0/11.0) {
-				vWant = v
-			}
-		}
+		//vWant := willOrderUnLuckNum[0]
+		//for _, v := range willOrderUnLuckNum {
+		//	if math.Abs(v.StopProbability-5.0/11.0) < math.Abs(vWant.StopProbability-5.0/11.0) {
+		//		vWant = v
+		//	}
+		//}
+		// 将所有符合要求的统统写入forecast2_{gd|jx}表格之中
+
 		// 将预测的数学期望最低的unluckNum写入forecast_{jx/gd}中
 		forecastOrderNum, err := nextOne(nearestOrderNum)
 		if err != nil {
@@ -210,11 +211,15 @@ func getLuckNum(prefix string) error {
 		//	return err
 		//}
 
+		unluckNumListV := make([]int, 0)
 		// 首先, 将预测的结果存放到forecast表格中
-		err = mysql.StoreResultToForecast2Table(prefix, forecastOrderNum, vWant.SpecificNum)
-		if err != nil {
-			log.Println(err)
-			return err
+		for _, v := range willOrderUnLuckNum {
+			err = mysql.StoreResultToForecast2Table(prefix, forecastOrderNum, v.SpecificNum)
+			unluckNumListV = append(unluckNumListV, v.SpecificNum)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
 		}
 		// 从原始数据表格中确认是否符合
 		err = mysql.DetectForecast2(prefix)
@@ -229,7 +234,7 @@ func getLuckNum(prefix string) error {
 			log.Println("StatisticsForecast: ", err)
 			return err
 		}
-		message := msg + fmt.Sprintf("%s %s %d", prefix, forecastOrderNum, vWant.SpecificNum)
+		message := msg + fmt.Sprintf("%s %s %+v", prefix, forecastOrderNum, unluckNumListV)
 		// 尝试三次, 将消息发送出去
 		go sendMsgThreeTimes("unluck: \n" + message)
 		//return errors.New("send msg fail")

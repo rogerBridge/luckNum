@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "start"
 ./timingGetData &
-./luckyGd &
-./luckyJx
+./luckyGd >> luckyGd.log &
+./luckyJx >> luckyJx.log
 echo "end"
