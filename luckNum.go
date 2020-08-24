@@ -168,14 +168,17 @@ func getLuckNum(prefix string) error {
 		}
 		msg, err := mysql.StatisticsForecast(prefix)
 		if err != nil {
-			log.Println("StatisticsForecast: ", err)
+			log.Println("StatisticsForecast error: ", err)
 			return err
 		}
-		message := msg + fmt.Sprintf("%s %s %d", prefix, forecastOrderNum, vWant.SpecificNum)
+		message := msg + fmt.Sprintf("%s %s %d %d %.4f %.4f", prefix, forecastOrderNum, vWant.SpecificNum, vWant.LeaveValue, vWant.StopProbability, vWant.HopeIncome)
 		// 尝试三次, 将消息发送出去
 		log.Println("luck: \n" + message)
-		//go sendMsgThreeTimes("luck: \n" + message)
+		//if vWant.LeaveValue > 6 {
+		//	go sendMsgThreeTimes("luck: \n" + message)
+		//}
 		//return errors.New("send msg fail")
+
 	} else {
 		err := mysql.DetectForecast(prefix)
 		if err != nil {
@@ -236,7 +239,8 @@ func getLuckNum(prefix string) error {
 		}
 		message := msg + fmt.Sprintf("%s %s %+v", prefix, forecastOrderNum, unluckNumListV)
 		// 尝试三次, 将消息发送出去
-		go sendMsgThreeTimes("unluck: \n" + message)
+		log.Println("unluck: \n" + message)
+		//go sendMsgThreeTimes("unluck: \n" + message)
 		//return errors.New("send msg fail")
 	} else {
 		err := mysql.DetectForecast2(prefix)

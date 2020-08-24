@@ -30,13 +30,16 @@ var jxUnluck = (5.0 / 11.0) * 0.99
 var jxWinOnce = 2.156
 
 func main() {
-	// 测试区域
-	////mysql.StatisticsForecast("gd/")
-	//msgGd, err := mysql.StatisticsForecast("jx/")
+	//// 测试区域
+	//msgGd, err := mysql.StatisticsForecast("gd/")
 	//if err != nil {
 	//	log.Println(err)
 	//}
-	//fmt.Println(msgGd)
+	//msgJx, err := mysql.StatisticsForecast("jx/")
+	//if err!=nil {
+	//	log.Println(err)
+	//}
+	//fmt.Println(msgGd, msgJx)
 
 	////立即更新不含今天数据的所有数据到mysql中
 	//dateList := constructDate()
@@ -130,6 +133,18 @@ func main() {
 	//}
 	//log.Println(msgGd)
 	//msgJx, err := mysql.StatisticsForecast2("jx/")
+	//if err!=nil {
+	//	log.Println(err)
+	//}
+	//log.Println(msgJx)
+
+	//// 立刻统计forecast_luck表格中的数值
+	//msgGd, err := mysql.StatisticsForecast("gd/")
+	//if err!=nil {
+	//	log.Println(err)
+	//}
+	//log.Println(msgGd)
+	//msgJx, err := mysql.StatisticsForecast("jx/")
 	//if err!=nil {
 	//	log.Println(err)
 	//}
