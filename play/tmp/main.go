@@ -10,6 +10,13 @@ import (
 	"time"
 )
 
+func main() {
+	err := pushMsgToBot("hello")
+	if err!=nil {
+		log.Println(err)
+	}
+}
+
 func pushMsgToBot(msg string) error {
 	c := http.Client{
 		Timeout: 30 * time.Second,
